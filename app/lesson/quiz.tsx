@@ -60,7 +60,7 @@ export const Quiz = ({
 
     const router = useRouter();
 
-    const [finishAudio] = useAudio({ src: "/finish.mp3", autoPlay: true });
+    const [finishAudio] = useAudio({ src: "/audio/finish.mp3", autoPlay: true });
     const [
         correctAudio,
         _c,

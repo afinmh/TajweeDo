@@ -47,6 +47,7 @@ export const Items = ({
 
     const getRequirement = (name: string): string => {
         const n = (name || '').toLowerCase();
+        if (n.includes('bahlil')) return 'Selesaikan 5 misi harian';
         if (n.includes('sultan')) return 'Beli semua item di toko';
         if (n.includes('bunga')) return 'Streak 7 hari';
         if (n.includes('bintang')) return 'Streak 15 hari';
