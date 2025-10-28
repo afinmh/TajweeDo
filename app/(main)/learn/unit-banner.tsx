@@ -5,11 +5,14 @@ import Link from "next/link";
 type Props = {
     title: string;
     description: string;
+    // When provided, the Continue button will deep-link to this lesson id
+    lessonId?: number;
 };
 
 export const UnitBanner = ({
     title,
     description,
+    lessonId,
 }: Props) => {
     return (
         <div className="w-full rounded-xl bg-green-500 p-5 text-white flex items-center justify-between">
@@ -19,7 +22,7 @@ export const UnitBanner = ({
                     {description}
                 </p>
             </div>
-            <Link href="/lesson">
+            <Link href={lessonId ? `/lesson/${lessonId}` : "/lesson"}>
                 <Button 
                     size="lg"
                     variant="secondary"

@@ -1,0 +1,11 @@
+Idzhar Halqi – Path 1
+
+Struktur 6 soal:
+1) SELECT_ALL: Pilih semua contoh bacaan Idzhar Halqi (4 tombol interaktif)
+2) SELECT_ALL: Pilih semua huruf Idzhar Halqi (ا، هـ، ع، ح, غ, خ)
+3) Bagaimana cara membaca Idzhar Halqi?
+4) Manakah huruf Idzhar Halqi?
+5) Manakah contoh bacaan Idzhar Halqi?
+6) Huruf berikut yang termasuk huruf Idzhar Halqi adalah…
+
+Catatan: Soal 3-6 diambil dari pool #3–#6.

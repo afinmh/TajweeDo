@@ -1,11 +1,3 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
-
-import * as schema from './schema';
-// uses github account for neon
-
-const sql = neon(process.env.DATABASE_URL!);
-// @ts-ignore
-const db = drizzle(sql, { schema });
-
+// Drizzle/Neon removed. Placeholder to avoid build-time type errors if referenced accidentally.
+const db: any = {};
 export default db;

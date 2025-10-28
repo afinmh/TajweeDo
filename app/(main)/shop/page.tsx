@@ -1,7 +1,7 @@
 import { FeedWrapper } from "@/components/feed-wrapper";
 import { StickyWrapper } from "@/components/sticky-wrapper";
 import { UserProgress } from "@/components/user-progress";
-import { getUserProgress, getUserSubscription } from "@/db/queries";
+import { getUserProgress } from "@/db/queries";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { Items } from "./items";
@@ -10,21 +10,18 @@ import { Quests } from "@/components/quests";
 
 const ShopPage = async () => {
     const userProgressData = getUserProgress();
-    const userSubscriptionData = getUserSubscription();
 
     const [
-        userProgress,
-        userSubscription
+        userProgress
     ] = await Promise.all([
         userProgressData,
-        userSubscriptionData,
     ]);
 
     if(!userProgress || !userProgress.activeCourse){
         redirect("/courses");
     };
 
-    const isPro = !!userSubscription?.isActive
+    const isPro = false
 
     return (
         <div className="flex flex-row-reverse gap-[48px] px-6">
@@ -54,7 +51,7 @@ const ShopPage = async () => {
                         Shop
                     </h1>
                     <p className="text-muted-foreground text-center text-lg mb-6">
-                        Spend your points on cool stuff
+                        Ayo tukar poin kamu jadi barang keren!
                     </p>
                     <Items 
                         hearts={userProgress.hearts}

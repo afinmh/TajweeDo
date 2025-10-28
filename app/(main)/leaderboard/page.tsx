@@ -5,22 +5,19 @@ import { StickyWrapper } from "@/components/sticky-wrapper";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { UserProgress } from "@/components/user-progress";
-import { getTopTenUsers, getUserProgress, getUserSubscription } from "@/db/queries";
+import { getTopTenUsers, getUserProgress } from "@/db/queries";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 
 const LeaderboardPage = async () => {
     const userProgressData = getUserProgress();
-    const userSubscriptionData = getUserSubscription();
     const leaderboardData = getTopTenUsers();
 
     const [
         userProgress,
-        userSubscription,
         leaderboard,
     ] = await Promise.all([
         userProgressData,
-        userSubscriptionData,
         leaderboardData,
     ]);
 
@@ -28,7 +25,7 @@ const LeaderboardPage = async () => {
         redirect("/courses");
     };
 
-    const isPro = !!userSubscription?.isActive
+    const isPro = false
 
     return (
         <div className="flex flex-row-reverse gap-[48px] px-6">
@@ -58,7 +55,7 @@ const LeaderboardPage = async () => {
                         Leaderboard
                     </h1>
                     <p className="text-muted-foreground text-center text-lg mb-6">
-                        See where you stand amongst your peers in the community.
+                        Siapa yang ada di pucuk? Yuk lihat peringkatmu!
                     </p>
                     <Separator className="mb-4 h-0.5 rounded-full" />
                     {leaderboard.map((userProgress, index) => (
@@ -68,7 +65,7 @@ const LeaderboardPage = async () => {
                         >
                             <p className="font-bold text-lime-700 mr-4 text-xl">{index + 1}</p>
                             <Avatar
-                                className="border bg-green-500 h-12 w-12 ml-3 mr-6"
+                                className="h-14 w-14 ml-3 mr-6 bg-transparent border-0"
                             >
                                 <AvatarImage
                                     className="object-cover"

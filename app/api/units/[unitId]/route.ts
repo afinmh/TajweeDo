@@ -1,48 +1,107 @@
-import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import db from "@/db/drizzle";
-import { units } from "@/db/schema";
 import { isAdmin } from "@/lib/admin";
+import { supabaseAdmin } from "@/lib/supabase";
 
-export const GET = async (req: Request,
+export const GET = async (
+    req: Request,
     { params }: { params: { unitId: number } },
 ) => {
     if (!isAdmin()) {
         return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const id = Number(params.unitId);
+    const { data, error } = await supabaseAdmin
+        .from('units')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (error && error.code !== 'PGRST116') {
+        return new NextResponse(error.message, { status: 500 });
+    }
+    if (!data) {
+        return new NextResponse("Unit not found", { status: 404 });
+    }
+
+    const mapped = {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        courseId: data.course_id,
+        order: data.order,
     };
 
-    const data = await db.query.units.findFirst({
-        where: eq(units.id, params.unitId),
-    });
-
-    return NextResponse.json(data);
+    return NextResponse.json(mapped);
 };
 
-export const PUT = async (req: Request,
+export const PUT = async (
+    req: Request,
     { params }: { params: { unitId: number } },
 ) => {
     if (!isAdmin()) {
         return new NextResponse("Unauthorized", { status: 401 });
-    };
+    }
 
+    const id = Number(params.unitId);
     const body = await req.json();
+    const payload = {
+        title: body.title,
+        description: body.description,
+        course_id: body.courseId,
+        order: body.order,
+    };
 
-    const data = await db.update(units).set({
-        ...body,
-    }).where(eq(units.id, params.unitId)).returning();
+    const { data, error } = await supabaseAdmin
+        .from('units')
+        .update(payload)
+        .eq('id', id)
+        .select('*')
+        .single();
 
-    return NextResponse.json(data[0]);
+    if (error) {
+        return new NextResponse(error.message, { status: 500 });
+    }
+
+    const mapped = {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        courseId: data.course_id,
+        order: data.order,
+    };
+
+    return NextResponse.json(mapped);
 };
 
-export const DELETE = async (req: Request,
+export const DELETE = async (
+    req: Request,
     { params }: { params: { unitId: number } },
 ) => {
     if (!isAdmin()) {
         return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const id = Number(params.unitId);
+    const { data, error } = await supabaseAdmin
+        .from('units')
+        .delete()
+        .eq('id', id)
+        .select('*')
+        .single();
+
+    if (error) {
+        return new NextResponse(error.message, { status: 500 });
+    }
+
+    const mapped = {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        courseId: data.course_id,
+        order: data.order,
     };
 
-    const data = await db.delete(units).where(eq(units.id, params.unitId)).returning();
-
-    return NextResponse.json(data[0]);
+    return NextResponse.json(mapped);
 };

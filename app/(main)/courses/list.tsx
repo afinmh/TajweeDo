@@ -1,15 +1,19 @@
 "use client";
-
-import { courses, userProgress } from "@/db/schema";
 import { Card } from "./card";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { upsertUserProgress } from "@/actions/user-progress";
 import { toast } from "sonner";
 
+type CourseItem = {
+    id: number;
+    title: string;
+    imageSrc: string;
+};
+
 type Props = {
-    courses: typeof courses.$inferSelect[];
-    activeCourseId?: typeof userProgress.$inferSelect.activeCourseId;
+    courses: CourseItem[];
+    activeCourseId?: number | null;
 };
 
 export const List = ({ courses, activeCourseId }: Props) => {

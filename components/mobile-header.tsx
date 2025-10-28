@@ -1,19 +1,14 @@
 import Link from "next/link"
 import Image from "next/image"
 import { InfinityIcon } from "lucide-react"
-import { getUserProgress, getUserSubscription } from "@/db/queries"
+import { getUserProgress } from "@/db/queries"
 
 export const MobileHeader = async () => {
-    const userProgressData = getUserProgress();
-    const userSubscriptionData = getUserSubscription();
-    const [userProgress, userSubscription] = await Promise.all([
-        userProgressData,
-        userSubscriptionData,
-    ]);
+    const userProgress = await getUserProgress();
 
     const points = userProgress?.points ?? 0;
     const hearts = userProgress?.hearts ?? 0;
-    const isPro = !!userSubscription?.isActive;
+    const isPro = false;
 
     return (
         <nav className="lg:hidden px-4 h-[60px] flex items-center justify-between bg-emerald-400 border-b fixed top-0 w-full z-50">

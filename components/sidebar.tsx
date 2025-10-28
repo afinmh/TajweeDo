@@ -4,14 +4,9 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { SidebarItem } from "./sidebar-item";
-import {
-    ClerkLoading,
-    ClerkLoaded,
-    UserButton
-} from "@clerk/nextjs";
 
-import { Loader } from "lucide-react";
 import { Button } from "./ui/button";
+import AuthEntry from "./auth-entry";
 
 type Props = {
     className?: string;
@@ -56,12 +51,7 @@ export const Sidebar = ({ className }: Props) => {
                 />
             </div>
             <div className="p-4">
-                <ClerkLoading>
-                    <Loader className="h-5 w-5 text-muted-foreground animate-spin" />
-                </ClerkLoading>
-                <ClerkLoaded>
-                    <UserButton afterSignOutUrl="/" />
-                </ClerkLoaded>
+                <AuthEntry variant="button" />
             </div>
             </div>
 
@@ -81,9 +71,7 @@ export const Sidebar = ({ className }: Props) => {
                         <Image src="/shop.svg" alt="Shop" width={28} height={28} />
                     </Link>
                     <div className="flex items-center text-slate-700">
-                        <ClerkLoaded>
-                            <UserButton />
-                        </ClerkLoaded>
+                        <AuthEntry variant="compact" />
                     </div>
                 </div>
             </nav>

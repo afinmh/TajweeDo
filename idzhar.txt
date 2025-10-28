@@ -1,0 +1,106 @@
+idzhar:
+
+1. Penjelasan Idzhar Halqi
+type: SELECT_ALL
+content: “Nun mati dibaca dengan jelas tanpa dengung ketika bertemu huruf halqi (ا، هـ، ع، ح، غ، خ).”
+interaktif: 4 tombol gambar + suara:
+يَنْحِتُونَ
+مَنْ خَافَ
+مِنْ هَادٍ
+أَنْعَمْتَ
+
+2. Huruf Idzhar Halqi
+type: SELECT_ALL
+content: “Nun mati bertemu huruf Idzhar Halqi. Pilih semua huruf Idzhar Halqi berikut.”
+options: ا، هـ، ع، ح، غ، خ (semua harus ditekan)
+
+3. (SELECT):
+“Bagaimana cara membaca Idzhar Halqi?”
+Dibaca jelas tanpa dengung ✅
+Dibaca samar
+Dibaca dengan dengung
+Dibaca panjang
+
+4. (SELECT):
+“Manakah huruf Idzhar Halqi?”
+غ ✅
+م
+ي
+ن
+
+5. (SELECT):
+“Manakah contoh bacaan Idzhar Halqi?”
+مِنْ أَمْرِهِ ✅
+مَنْ يَقُولُ
+مَنْ وَرَائِهِمْ
+مَنْ رَبِّهِمْ
+
+6. (SELECT):
+“Huruf berikut yang termasuk huruf Idzhar Halqi adalah…”
+ا ✅
+و
+ب
+ش
+
+7. (SELECT)
+question: “Kata berikut dibaca dengan hukum Idzhar Halqi…”
+✅ مَنْ عَمِلَ
+مَنْ يَقُولُ
+مَنْ نَصَرَ
+مَنْ يَرْحَمْ
+
+8. (SELECT)
+question: “Hukum bacaan ‘مِنْ هَادٍ’ adalah…”
+✅ Idzhar Halqi
+Idgham Bighunnah
+Ikhfa’
+Iqlab
+
+9. (SELECT)
+question: “Nun mati pada kata ‘مِنْ خَافَ’ bertemu huruf apa?”
+✅ خ
+ن
+م
+ف
+
+10. (SELECT)
+question: “Huruf yang keluar dari tenggorokan disebut huruf…”
+✅ Halqi
+Syafawi
+Lisan
+Halaqiyah
+
+11. (SELECT)
+question: “Berapa jumlah huruf Idzhar Halqi?”
+✅ Enam
+Empat
+Lima
+Tujuh
+
+12. (SELECT)
+question: “Huruf Idzhar Halqi pertama adalah…”
+✅ ا
+غ
+ح
+هـ
+
+13. (SELECT)
+question: “Huruf Idzhar Halqi terakhir adalah…”
+✅ خ
+غ
+ح
+ع
+
+14. (SELECT)
+question: “Jika nun mati bertemu huruf ع, maka dibaca…”
+✅ Jelas tanpa dengung
+Samar
+Didengungkan
+Dibaca panjang
+
+15. (SELECT)
+question: “Pilih bacaan yang benar dengan hukum Idzhar Halqi.”
+✅ أَنْعَمْتَ
+مَنْ يَقُولُ
+مَنْ نُورٍ
+مَنْ وَرَائِهِمْ

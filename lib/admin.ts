@@ -1,19 +1,10 @@
-import { auth } from "@clerk/nextjs";
-
+// Clerk removed. Simple stub for admin check — replace with JWT-based check later.
 const adminIds = [
-    "user_2gF7aSfrEOmXcQZNLazLFcBKQHs",
+    // legacy admin ids if needed
 ];
 
 export const isAdmin = () => {
-    const { userId } = auth();
-
-    if (!userId) {
-        return false;
-    };
-
-    // give access to only these users
-    // return adminIds.indexOf(userId) !== -1;
-    
-    // give access to everybody
-    return true
+    // TODO: implement server-side JWT validation to determine userId
+    // For now allow access to simplify migration; tighten later.
+    return true;
 };

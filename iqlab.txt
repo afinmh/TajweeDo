@@ -1,0 +1,84 @@
+Iqlab
+1. Penjelasan Iqlab
+
+type: SELECT_ALL
+content: “Iqlab terjadi bila nun mati (نْ) atau tanwin bertemu dengan huruf ب. Nun mati berubah menjadi suara mim (م) dan dibaca dengan dengung.”
+interaktif (gambar + suara):
+
+سَمِيعٌۢ بَصِيرٌ
+
+أَنْبِئْهُمْ
+
+يُنۢبِئُكُمْ
+
+أَنْبَتَ
+
+2. Huruf Iqlab
+
+type: SELECT_ALL
+content: “Pilih huruf yang menyebabkan hukum bacaan Iqlab.”
+options: ب ✅
+
+3. (SELECT)
+
+question: “Bagaimana cara membaca Iqlab?”
+✅ Huruf nun mati atau tanwin diubah menjadi bunyi mim dan dibaca dengan dengung
+Tanpa dengung
+Dibaca jelas
+Dibaca panjang
+
+4. (SELECT)
+
+question: “Huruf yang menyebabkan Iqlab adalah…”
+✅ ب
+م
+ن
+ف
+
+5. (SELECT)
+
+question: “Contoh bacaan Iqlab terdapat pada kalimat…”
+✅ سَمِيعٌۢ بَصِيرٌ
+مَنْ يَقُولُ
+مِنْ أَمْرِهِ
+مِنْ رَبِّهِمْ
+
+6. (SELECT)
+
+question: “Apa tanda Iqlab dalam mushaf Al-Qur’an?”
+✅ Adanya huruf mim kecil (م) di atas atau di depan huruf nun mati atau tanwin
+Tanda sukun di atas huruf ب
+Tanda tasydid
+Tidak ada tanda khusus
+
+7. (SELECT)
+
+question: “Berapakah huruf Iqlab?”
+✅ Satu
+Dua
+Empat
+Enam
+
+8. (SELECT)
+
+question: “Bagaimana perubahan bunyi pada Iqlab?”
+✅ Nun mati berubah menjadi bunyi mim disertai dengung
+Nun mati hilang
+Nun mati tetap dibaca jelas
+Nun mati dibaca panjang
+
+9. (SELECT)
+
+question: “Bacaan ‘يُنۢبِئُكُمْ’ termasuk hukum…”
+✅ Iqlab
+Idgham Bighunnah
+Ikhfa’
+Idzhar Halqi
+
+10. (SELECT)
+
+question: “Manakah contoh bacaan Iqlab yang benar?”
+✅ أَنْبَتَ
+مَنْ خَافَ
+مِنْ وَرَائِهِمْ
+مِنْ نُورٍ

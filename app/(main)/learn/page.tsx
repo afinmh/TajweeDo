@@ -6,12 +6,11 @@ import {
     getCourseProgress,
     getLessonPercentage,
     getUnits,
-    getUserProgress,
-    getUserSubscription
+    getUserProgress
 } from "@/db/queries";
 import { redirect } from "next/navigation";
 import { Unit } from "./unit";
-import { lessons, units as unitsSchema } from "@/db/schema";
+// types moved off Drizzle; using structural types
 import { Promo } from "@/components/promo";
 import { Quests } from "@/components/quests";
 
@@ -21,20 +20,17 @@ const LearnPage = async () => {
     const courseProgressData = getCourseProgress();
     const lessonPercentageData = getLessonPercentage();
     const unitsData = getUnits();
-    const userSubscriptionData = getUserSubscription();
 
     const [
         userProgress,
         units,
         courseProgress,
-        lessonPercentage,
-        userSubscription
+        lessonPercentage
     ] = await Promise.all([
         userProgressData,
         unitsData,
         courseProgressData,
-        lessonPercentageData,
-        userSubscriptionData
+        lessonPercentageData
     ]);
 
     // if no check we will need ? for typeof as well as where there is userProgress.active etc.
@@ -47,7 +43,7 @@ const LearnPage = async () => {
         redirect("/courses");
     }
 
-    const isPro = !!userSubscription?.isActive;
+    const isPro = false;
 
     return (
         <div className="flex flex-row-reverse gap-[48px] px-6">
@@ -76,9 +72,7 @@ const LearnPage = async () => {
                             description={unit.description}
                             title={unit.title}
                             lessons={unit.lessons}
-                            activeLesson={courseProgress.activeLesson as typeof lessons.$inferSelect & {
-                                unit: typeof unitsSchema.$inferSelect;
-                            } | undefined}
+                            activeLesson={courseProgress?.activeLesson as any}
                             activeLessonPercentage={lessonPercentage}
                         />
                     </div>

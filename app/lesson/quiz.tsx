@@ -3,14 +3,13 @@
 import { toast } from "sonner";
 import { useState, useTransition } from "react";
 import Confetti from "react-confetti"
-
-import { challengeOptions, challenges, userSubscription } from "@/db/schema";
 import { reduceHearts } from "@/actions/user-progress";
-import { upsertChallengeProgress } from "@/actions/challenge-progress";
+import { completeLesson } from "@/actions/lesson-progress";
 
 import { Header } from "./header";
 import { QuestionBubble } from "./question-bubble";
 import { Challenge } from "./challenge";
+// Card imported previously for side-by-side bubble; no longer needed here
 import { Footer } from "./footer";
 import { useAudio, useWindowSize, useMount } from "react-use";
 import Image from "next/image";
@@ -23,13 +22,21 @@ type Props = {
     initialPercentage: number;
     initialHearts: number;
     initialLessonId: number;
-    initialLessonChallenges: (typeof challenges.$inferSelect & {
+    initialLessonChallenges: ({
+        id: number;
+        type: "SELECT" | "ASSIST" | "SELECT_ALL";
+        question: string;
+        order: number;
         completed: boolean;
-        challengeOptions: typeof challengeOptions.$inferSelect[];
+        challengeOptions: Array<{
+            id: number;
+            text: string;
+            correct: boolean;
+            imageSrc: string | null;
+            audioSrc: string | null;
+        }>;
     })[];
-    userSubscription: typeof userSubscription.$inferSelect & {
-        isActive: boolean;
-    } | null;
+    userSubscription: boolean | null;
 };
 
 
@@ -58,13 +65,13 @@ export const Quiz = ({
         correctAudio,
         _c,
         correctControls,
-    ] = useAudio({ src: "/correct.wav" });
+    ] = useAudio({ src: "/audio/correct.wav" });
 
     const [
         incorrectAudio,
         _i,
         incorrectControls,
-    ] = useAudio({ src: "/incorrect.wav" });
+    ] = useAudio({ src: "/audio/incorrect.wav" });
 
     const [pending, startTransition] = useTransition();
 
@@ -82,6 +89,7 @@ export const Quiz = ({
     });
 
     const [selectedOption, setSelectedOption] = useState<number>();
+    const [selectedIds, setSelectedIds] = useState<number[]>([]); // for SELECT_ALL
     const [status, setStatus] = useState<"correct" | "wrong" | "none">("none");
 
     // from state
@@ -94,16 +102,19 @@ export const Quiz = ({
 
     const onSelect = (id: number) => {
         if (status !== "none") return;
-
+        if (challenge.type === "SELECT_ALL") {
+            setSelectedIds((prev) => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+            return;
+        }
         setSelectedOption(id);
     };
 
     const onContinue = () => {
-        if (!selectedOption) return;
-
+        // unified next/reset behavior first
         if (status === "wrong") {
             setStatus("none");
             setSelectedOption(undefined);
+            setSelectedIds([]);
             return;
         }
 
@@ -111,38 +122,57 @@ export const Quiz = ({
             onNext();
             setStatus("none");
             setSelectedOption(undefined);
+            setSelectedIds([]);
             return;
         }
 
-        const correctOption = options.find((option) => option.correct);
+        // SELECT_ALL path: once all correct selected, it is correct
+        if (challenge.type === "SELECT_ALL") {
+            const correctIds = options.filter(o => o.correct).map(o => o.id).sort();
+            const chosen = [...selectedIds].sort();
+            const isAll = correctIds.length === chosen.length && correctIds.every((v, i) => v === chosen[i]);
+            if (!isAll) return;
+            startTransition(async () => {
+                // If this was the last question, mark lesson complete server-side
+                const isLast = activeIndex >= challenges.length - 1;
+                correctControls.play();
+                setStatus("correct");
+                setPercentage((prev) => prev + 100 / challenges.length);
+                if (isLast) {
+                    try {
+                        await completeLesson(lessonId);
+                    } catch {
+                        // non-fatal
+                    }
+                }
+            });
+            return;
+        }
+
+        if (!selectedOption) return;
+
+    const correctOption = options.find((option) => option.correct);
 
         if (!correctOption) {
             return;
         }
 
         if (correctOption && correctOption.id === selectedOption) {
-            startTransition(() => {
-                upsertChallengeProgress(challenge.id)
-                    .then((response) => {
-                        if (response?.error === "hearts") {
-                            openHeartsModal();
-                            return;
-                        }
-
-                        correctControls.play();
-                        setStatus("correct");
-                        setPercentage((prev) => prev + 100 / challenges.length);
-
-                        // this is a practice
-                        if (initialPercentage === 100) {
-                            setHearts((prev) => Math.min(prev + 1, 5));
-                        }
-                    })
-                    .catch(() => toast.error("Something went wrong. Please try again."))
+            startTransition(async () => {
+                const isLast = activeIndex >= challenges.length - 1;
+                correctControls.play();
+                setStatus("correct");
+                setPercentage((prev) => prev + 100 / challenges.length);
+                if (isLast) {
+                    try { await completeLesson(lessonId); } catch {}
+                }
+                if (initialPercentage === 100) {
+                    setHearts((prev) => Math.min(prev + 1, 5));
+                }
             })
         } else {
             startTransition(() => {
-                reduceHearts(challenge.id)
+                reduceHearts(lessonId)
                     .then((response) => {
                         if (response?.error === "hearts") {
                             openHeartsModal();
@@ -174,18 +204,18 @@ export const Quiz = ({
                 />
                 <div className="flex flex-col gap-y-4 lg:gap-y-8 max-w-lg mx-auto text-center items-center justify-center h-full">
                     <Image
-                        src="/finish.svg"
+                        src="/star.png"
                         alt="finish"
                         className="hidden lg:block"
                         height={100}
                         width={100}
                     />
                     <Image
-                        src="/finish.svg"
+                        src="/star.png"
                         alt="finish"
                         className="block lg:hidden"
-                        height={50}
-                        width={50}
+                        height={100}
+                        width={100}
                     />
                     <h1 className="text-xl lg:text-3xl font-bold text-neutral-700">
                         Great Job! <br />
@@ -199,7 +229,7 @@ export const Quiz = ({
                         <ResultCard
                             variant="hearts"
                             value={hearts}
-                            userSubscription={userSubscription?.isActive}
+                            userSubscription={!!userSubscription}
                         />
                     </div>
                 </div>
@@ -214,6 +244,12 @@ export const Quiz = ({
 
     const title = challenge.type === "ASSIST" ? "Select the correct meaning" : challenge.question;
 
+    const correctIdsForAll = challenge.type === "SELECT_ALL" ? options.filter(o => o.correct).map(o => o.id) : [];
+    const showQuestionBubble = challenge.type === "ASSIST" || options.every((o) => !o.audioSrc);
+    const canCheck = challenge.type === "SELECT_ALL" ? (
+        selectedIds.length === correctIdsForAll.length && correctIdsForAll.every(id => selectedIds.includes(id))
+    ) : !!selectedOption;
+
     return (
 
         <>
@@ -222,7 +258,7 @@ export const Quiz = ({
             <Header
                 hearts={hearts}
                 percentage={percentage}
-                hasActiveSubscription={!!userSubscription?.isActive}
+                hasActiveSubscription={!!userSubscription}
             />
             <div className="flex-1">
                 <div className="h-full flex items-center justify-center">
@@ -230,24 +266,38 @@ export const Quiz = ({
                         <h1 className="text-lg lg:text-3xl text-center lg:text-start font-bold text-neutral-700">
                             {title}
                         </h1>
-                        <div>
-                            {challenge.type === "ASSIST" && (
-                                <QuestionBubble question={challenge.question} />
+                        <div className="max-h-[52vh] overflow-y-auto no-scrollbar pb-4 pr-1">
+                            {showQuestionBubble ? (
+                                <div className="flex flex-col gap-4">
+                                    <QuestionBubble question={challenge.question} />
+                                    <Challenge
+                                        options={options}
+                                        onSelect={onSelect}
+                                        status={status}
+                                        selectedOption={selectedOption}
+                                        selectedIds={selectedIds}
+                                        disabled={pending}
+                                        type={challenge.type}
+                                        bubbleLayout
+                                    />
+                                </div>
+                            ) : (
+                                <Challenge
+                                    options={options}
+                                    onSelect={onSelect}
+                                    status={status}
+                                    selectedOption={selectedOption}
+                                    selectedIds={selectedIds}
+                                    disabled={pending}
+                                    type={challenge.type}
+                                />
                             )}
-                            <Challenge
-                                options={options}
-                                onSelect={onSelect}
-                                status={status}
-                                selectedOption={selectedOption}
-                                disabled={pending}
-                                type={challenge.type}
-                            />
                         </div>
                     </div>
                 </div>
             </div>
             <Footer
-                disabled={pending || !selectedOption}
+                disabled={pending || !canCheck}
                 status={status}
                 onCheck={onContinue}
             />

@@ -1,66 +1,86 @@
 "use server";
 
-import db from "@/db/drizzle";
-import { getUserProgress, getUserSubscription } from "@/db/queries";
-import { challengeProgress, challenges, userProgress } from "@/db/schema";
-import { auth } from "@clerk/nextjs";
-import { and, eq } from "drizzle-orm";
+import { supabaseAdmin } from "@/lib/supabase";
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
 import { revalidatePath } from "next/cache";
 
 export const upsertChallengeProgress = async (challengeId: number) => {
-    const { userId } = await auth();
+    const cookieStore = cookies();
+    const token = cookieStore.get('token')?.value;
+    let userId: string | null = null;
+    if (token) {
+        try {
+            const payload: any = jwt.verify(token, process.env.JWT_SECRET as string);
+            userId = payload.userId as string;
+        } catch (e) {
+            userId = null;
+        }
+    }
 
     if (!userId) {
         throw new Error("Unauthorized");
     }
 
-    const currentUserProgress = await getUserProgress();
-    const userSubscription = await getUserSubscription();
-
-    if (!currentUserProgress) {
+    // Fetch current user progress
+    const { data: up, error: upErr } = await supabaseAdmin
+        .from('user_progress')
+        .select('user_id, hearts, points')
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (upErr) {
+        throw new Error("Failed to load user progress");
+    }
+    if (!up) {
         throw new Error("User Progress not found");
     }
 
-    const challenge = await db.query.challenges.findFirst({
-        where: eq(challenges.id, challengeId)
-    });
-
-    if (!challenge) {
+    // Fetch challenge
+    const { data: ch, error: chErr } = await supabaseAdmin
+        .from('challenges')
+        .select('id, lesson_id')
+        .eq('id', challengeId)
+        .maybeSingle();
+    if (chErr) {
+        throw new Error("Failed to load challenge");
+    }
+    if (!ch) {
         throw new Error("Challenge not found");
     }
 
-    const lessonId = challenge.lessonId;
+    const lessonId = ch.lesson_id;
 
-    const existingChallengeProgress = await db.query.challengeProgress.findFirst({
-        where: and(
-            eq(challengeProgress.userId, userId),
-            eq(challengeProgress.challengeId, challengeId),
-        ),
-    });
+    // Check existing challenge_progress
+    const { data: existing, error: existingErr } = await supabaseAdmin
+        .from('challenge_progress')
+        .select('id, completed')
+        .eq('user_id', userId)
+        .eq('challenge_id', challengeId)
+        .maybeSingle();
+    if (existingErr) {
+        throw new Error("Failed to load challenge progress");
+    }
 
     // boolean
-    const isPractice = !!existingChallengeProgress;
+    const isPractice = !!existing;
 
-    if (currentUserProgress.hearts === 0 &&
-        !isPractice &&
-        !userSubscription?.isActive
-    ) {
+    if (up.hearts === 0 && !isPractice) {
         return { error: "hearts" };
     };
 
     if (isPractice) {
-        await db.update(challengeProgress).set({
-            completed: true,
-        }).where(
-            eq(challengeProgress.id, existingChallengeProgress.id)
-        );
+        await supabaseAdmin
+            .from('challenge_progress')
+            .update({ completed: true })
+            .eq('id', existing!.id);
 
-        await db.update(userProgress).set({
-            hearts: Math.min(currentUserProgress.hearts + 1, 5),
-            points: currentUserProgress.points + 10,
-        }).where(
-            eq(userProgress.userId, userId)
-        );
+        await supabaseAdmin
+            .from('user_progress')
+            .update({
+                hearts: Math.min((up.hearts ?? 0) + 1, 5),
+                points: (up.points ?? 0) + 10,
+            })
+            .eq('user_id', userId);
 
         revalidatePath("/learn");
         revalidatePath("/lesson");
@@ -70,17 +90,18 @@ export const upsertChallengeProgress = async (challengeId: number) => {
         return;
     }
 
-    await db.insert(challengeProgress).values({
-        challengeId,
-        userId,
-        completed: true,
-    });
+    await supabaseAdmin
+        .from('challenge_progress')
+        .insert({
+            challenge_id: challengeId,
+            user_id: userId,
+            completed: true,
+        });
 
-    await db.update(userProgress).set({
-        points: currentUserProgress.points + 10,
-    }).where(
-        eq(userProgress.userId, userId)
-    );
+    await supabaseAdmin
+        .from('user_progress')
+        .update({ points: (up.points ?? 0) + 10 })
+        .eq('user_id', userId);
 
     revalidatePath("/learn");
     revalidatePath("/lesson");

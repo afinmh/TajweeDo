@@ -1,16 +1,27 @@
 "use client"
 
-import { useUser, useClerk } from "@clerk/nextjs";
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 
 export default function HeaderUser() {
-    const { isSignedIn, user } = useUser();
-    const clerk = useClerk();
     const [open, setOpen] = useState(false);
+    const [user, setUser] = useState<{ id: string; username: string; profileImageSrc?: string } | null>(null);
     const ref = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
+        async function load() {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (!res.ok) return;
+                const data = await res.json();
+                setUser(data);
+            } catch (err) {
+                // ignore
+            }
+        }
+
+        load();
+
         function onDoc(e: MouseEvent) {
             if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
         }
@@ -18,16 +29,14 @@ export default function HeaderUser() {
         return () => document.removeEventListener("click", onDoc);
     }, []);
 
-    const name = user?.firstName || user?.fullName || user?.username || "";
+    if (!user) return null;
 
-    if (!isSignedIn) return null;
-
-    const imgSrc = user?.profileImageUrl || user?.imageUrl || "/profile.svg";
+    const imgSrc = user.profileImageSrc || "/profile.svg";
 
     return (
         <div className="relative" ref={ref}>
             <div className="flex items-center gap-3">
-                {name ? <span className="text-sm font-medium text-slate-700">{name}</span> : null}
+                {user.username ? <span className="text-sm font-medium text-slate-700">{user.username}</span> : null}
 
                 <button
                     onClick={() => setOpen(v => !v)}
@@ -52,7 +61,9 @@ export default function HeaderUser() {
                         className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                         onClick={async () => {
                             setOpen(false);
-                            await clerk.signOut();
+                            await fetch('/api/auth/logout', { method: 'POST' });
+                            // reload to clear UI
+                            window.location.href = '/';
                         }}
                     >
                         Keluar

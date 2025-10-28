@@ -1,14 +1,5 @@
-import { Button } from "@/components/ui/button"
-import {
-    ClerkLoaded,
-    ClerkLoading,
-    SignedIn,
-    SignedOut,
-    SignInButton,
-} from "@clerk/nextjs"
-import { Loader } from "lucide-react"
 import Image from "next/image"
-import HeaderUser from "@/components/header-user"
+import AuthEntry from "@/components/auth-entry"
 
 export const Header = () => {
     return (
@@ -20,26 +11,7 @@ export const Header = () => {
                         TajweeDo
                     </h1>
                 </div>
-                {/* checks whether you are signed in or not */}
-                <ClerkLoading>
-                    <Loader className="h-5 w-5 text-muted-foreground animate-spin" />
-                </ClerkLoading>
-                <ClerkLoaded>
-                    <SignedIn>
-                        <HeaderUser />
-                    </SignedIn>
-                    <SignedOut>
-                        <SignInButton
-                            mode="modal"
-                            afterSignInUrl="/learn"
-                            afterSignUpUrl="/learn"
-                        >
-                            <Button className="lg" variant="ghost">
-                                Login
-                            </Button>
-                        </SignInButton>
-                    </SignedOut>
-                </ClerkLoaded>
+                <AuthEntry variant="full" />
             </div>
         </header>
     )

@@ -1,19 +1,27 @@
 "use server";
 
 import { POINTS_TO_REFILL } from "@/constants";
-import db from "@/db/drizzle";
-import { getCourseById, getUserProgress, getUserSubscription } from "@/db/queries";
-import { challengeProgress, challenges, userProgress } from "@/db/schema";
-import { auth, currentUser } from "@clerk/nextjs";
-import { and, eq } from "drizzle-orm";
+import { getCourseById } from "@/db/queries";
+import { supabaseAdmin } from "@/lib/supabase";
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 export const upsertUserProgress = async (courseId: number) => {
-    const { userId } = await auth();
-    const user = await currentUser();
+    const cookieStore = cookies();
+    const token = cookieStore.get('token')?.value;
+    let userId: string | null = null;
+    if (token) {
+        try {
+            const payload: any = jwt.verify(token, process.env.JWT_SECRET as string);
+            userId = payload.userId as string;
+        } catch (e) {
+            userId = null;
+        }
+    }
 
-    if (!userId || !user) {
+    if (!userId) {
         throw new Error("Unauthorized");
     }
 
@@ -27,110 +35,145 @@ export const upsertUserProgress = async (courseId: number) => {
         throw new Error("Course is empty");
     }
 
-    const existingUserProgress = await getUserProgress();
+    // Get existing progress
+    const { data: existing, error: exErr } = await supabaseAdmin
+        .from('user_progress')
+        .select('user_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (exErr) {
+        throw new Error("Failed to load user progress");
+    }
 
-    if (existingUserProgress) {
-        await db.update(userProgress).set({
-            activeCourseId: courseId,
-            userName: user.firstName || "User",
-            userImageSrc: user.imageUrl || "/mascot.svg",
-        });
+    // Fetch user profile for defaults
+    const { data: prof } = await supabaseAdmin
+        .from('users')
+        .select('username, profile_image_src')
+        .eq('id', userId)
+        .maybeSingle();
+
+    const userName = prof?.username || 'User';
+    const userImageSrc = prof?.profile_image_src || '/standar.png';
+
+    if (existing) {
+        await supabaseAdmin
+            .from('user_progress')
+            .update({
+                active_course_id: courseId,
+                user_name: userName,
+                user_image_src: userImageSrc,
+            })
+            .eq('user_id', userId);
 
         revalidatePath("/courses");
         revalidatePath("/learn");
         redirect("/learn");
-
     }
 
-    await db.insert(userProgress).values({
-        userId,
-        activeCourseId: courseId,
-        userName: user.firstName || "User",
-        userImageSrc: user.imageUrl || "/mascot.svg",
-    });
+    await supabaseAdmin
+        .from('user_progress')
+        .insert({
+            user_id: userId,
+            active_course_id: courseId,
+            user_name: userName,
+            user_image_src: userImageSrc,
+        });
 
     revalidatePath("/courses");
     revalidatePath("/learn");
     redirect("/learn");
 };
 
-export const reduceHearts = async (challengeId: number) => {
-    const { userId } = await auth();
+export const reduceHearts = async (lessonId?: number) => {
+    const cookieStore = cookies();
+    const token = cookieStore.get('token')?.value;
+    let userId: string | null = null;
+    if (token) {
+        try {
+            const payload: any = jwt.verify(token, process.env.JWT_SECRET as string);
+            userId = payload.userId as string;
+        } catch (e) {
+            userId = null;
+        }
+    }
 
     if (!userId) {
         throw new Error("Unauthorized");
     }
 
-    const currentUserProgress = await getUserProgress();
-    const userSubscription = await getUserSubscription();
-
-
-    const challenge = await db.query.challenges.findFirst({
-        where: eq(challenges.id, challengeId),
-    });
-
-    if (!challenge) {
-        throw new Error("Challenge not found");
-    };
-
-    const lessonId = challenge.lessonId;
-
-    const existingChallengeProgress = await db.query.challengeProgress.findFirst({
-        where: and(
-            eq(challengeProgress.userId, userId),
-            eq(challengeProgress.challengeId, challengeId),
-        ),
-    });
-
-    const isPractice = !!existingChallengeProgress;
-
-    if (isPractice) {
-        // passing field error
-        return { error: "practice" };
+    // Load current user progress
+    const { data: up, error: upErr } = await supabaseAdmin
+        .from('user_progress')
+        .select('hearts, points, user_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (upErr) {
+        throw new Error("Failed to load user progress");
     }
-
-    if (!currentUserProgress) {
-        // kind of breaks the app (security issue(reset to default))
+    if (!up) {
         throw new Error("User progress not found");
     }
 
-    if (userSubscription?.isActive){
-        return {error: "subscription"};
-    };
+    // We no longer gate hearts by challenge practice; hearts always reduce unless already zero.
 
-    if (currentUserProgress.hearts === 0) {
+    // No subscription feature; proceed with hearts logic only.
+
+    if ((up.hearts ?? 0) === 0) {
         return { error: "hearts" };
     }
 
-    await db.update(userProgress).set({
-        hearts: Math.max(currentUserProgress.hearts - 1, 0),
-    }).where(eq(userProgress.userId, userId));
+    await supabaseAdmin
+        .from('user_progress')
+        .update({ hearts: Math.max((up.hearts ?? 0) - 1, 0) })
+        .eq('user_id', userId);
 
     revalidatePath("/shop");
     revalidatePath("/quests");
     revalidatePath("/leaderboard");
-    revalidatePath(`/lesson/${lessonId}`);
+    if (lessonId) revalidatePath(`/lesson/${lessonId}`);
 };
 
 export const refillHearts = async () => {
-    const currentUserProgress = await getUserProgress();
+    const cookieStore = cookies();
+    const token = cookieStore.get('token')?.value;
+    let userId: string | null = null;
+    if (token) {
+        try {
+            const payload: any = jwt.verify(token, process.env.JWT_SECRET as string);
+            userId = payload.userId as string;
+        } catch (e) {
+            userId = null;
+        }
+    }
 
-    if (!currentUserProgress) {
+    if (!userId) {
+        throw new Error("Unauthorized");
+    }
+
+    const { data: up, error: upErr } = await supabaseAdmin
+        .from('user_progress')
+        .select('hearts, points')
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (upErr || !up) {
         throw new Error("User Progress not found");
-    };
+    }
 
-    if (currentUserProgress.hearts === 5) {
+    if ((up.hearts ?? 0) === 5) {
         throw new Error("Hearts are already full");
     };
 
-    if (currentUserProgress.points < POINTS_TO_REFILL) {
+    if ((up.points ?? 0) < POINTS_TO_REFILL) {
         throw new Error("Not enough points");
     };
 
-    await db.update(userProgress).set({
-        hearts:5,
-        points: currentUserProgress.points - POINTS_TO_REFILL,
-    }).where(eq(userProgress.userId, currentUserProgress.userId));
+    await supabaseAdmin
+        .from('user_progress')
+        .update({
+            hearts: 5,
+            points: (up.points ?? 0) - POINTS_TO_REFILL,
+        })
+        .eq('user_id', userId);
 
     revalidatePath("/shop");
     revalidatePath("/learn");

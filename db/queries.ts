@@ -1,261 +1,329 @@
-import { cache } from "react";
-import db from "@/db/drizzle";
-import { auth } from "@clerk/nextjs";
-import { eq } from "drizzle-orm";
-import {
-    challengeProgress,
-    courses,
-    lessons,
-    units,
-    userProgress,
-    userSubscription
-} from "@/db/schema";
+import { supabaseAdmin } from '@/lib/supabase';
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
 
-export const getUserProgress = cache(async () => {
-    const { userId } = await auth();
+const getUserId = (): string | null => {
+  try {
+    const token = cookies().get('token')?.value;
+    if (!token) return null;
+    const payload: any = jwt.verify(token, process.env.JWT_SECRET as string);
+    return (payload?.userId as string) || null;
+  } catch {
+    return null;
+  }
+};
 
-    if (!userId) {
-        return null;
-    };
+export const getUserProgress = async () => {
+  const userId = getUserId();
+  if (!userId) return null;
 
-    const data = await db.query.userProgress.findFirst({
-        where: eq(userProgress.userId, userId),
-        with: {
-            activeCourse: true,
-        },
-    });
+  const { data, error } = await supabaseAdmin
+    .from('user_progress')
+    .select('user_id, user_name, user_image_src, active_course_id, hearts, points, active_course:courses(*)')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) return null;
+  if (!data) return null;
+  return {
+    userId: data.user_id,
+    userName: data.user_name,
+    userImageSrc: data.user_image_src,
+    activeCourseId: data.active_course_id,
+    hearts: data.hearts,
+    points: data.points,
+    activeCourse: data.active_course || null,
+  } as any;
+};
 
-    return data;
-});
+export const getUnits = async () => {
+  const userId = getUserId();
+  const progress = await getUserProgress();
+  if (!userId || !progress?.activeCourseId) return [] as any[];
 
-export const getUnits = cache(async () => {
-    const { userId } = await auth();
-    const userProgress = await getUserProgress();
+  const { data, error } = await supabaseAdmin
+    .from('units')
+    .select('id, title, description, order, lessons(id, title, order)')
+    .eq('course_id', progress.activeCourseId)
+    .order('order', { ascending: true });
+  if (error || !data) return [];
+  // Prefer lesson_progress; fallback to challenge_progress if not available
+  const allLessons = data.flatMap((u: any) => u.lessons || []);
+  const lessonIds: number[] = allLessons.map((l: any) => l.id);
 
-    if (!userId || !userProgress?.activeCourseId) {
-        return [];
+  let completedMap = new Map<number, boolean>();
+  if (lessonIds.length) {
+    // Try lesson_progress table first
+    const { data: lprog, error: lpErr } = await supabaseAdmin
+      .from('lesson_progress' as any)
+      .select('lesson_id, completed')
+      .eq('user_id', userId)
+      .in('lesson_id', lessonIds);
+    if (!lpErr && lprog) {
+      (lprog || []).forEach((p: any) => completedMap.set(p.lesson_id, !!p.completed));
     }
 
-    const data = await db.query.units.findMany({
-        orderBy: (units, { asc }) => [asc(units.order)],
-        where: eq(units.courseId, userProgress.activeCourseId),
-        with: {
-            lessons: {
-                orderBy: (lessons, { asc }) => [asc(lessons.order)],
-                with: {
-                    challenges: {
-                        orderBy: (challenges, { asc }) => [asc(challenges.order)],
-                        with: {
-                            challengeProgress: {
-                                where: eq(
-                                    challengeProgress.userId,
-                                    userId,
-                                ),
-                            },
-                        },
-                    },
-                },
-            },
-        },
-    });
-
-    const normalizedData = data.map((unit) => {
-        const lessonsWithCompletedStatus = unit.lessons.map((lesson) => {
-            // We wont publish any empty lessons but if they is its completed will be as false 
-            if (lesson.challenges.length === 0) {
-                return { ...lesson, completed: false };
-            }
-
-            const allCompletedChallenges = lesson.challenges.every((challenge) => {
-                return challenge.challengeProgress
-                    && challenge.challengeProgress.length > 0
-                    && challenge.challengeProgress.every((progress) => progress.completed);
-            });
-
-            return { ...lesson, completed: allCompletedChallenges };
-        });
-        return { ...unit, lessons: lessonsWithCompletedStatus };
-    });
-
-    return normalizedData;
-});
-
-export const getCourses = cache(async () => {
-    const data = await db.query.courses.findMany();
-
-    return data;
-});
-
-export const getCourseById = cache(async (courseId: number) => {
-    const data = await db.query.courses.findFirst({
-        where: eq(courses.id, courseId),
-        with: {
-            units: {
-                orderBy: (units, { asc }) => [asc(units.order)],
-                with: {
-                    lessons: {
-                        orderBy: (lessons, { asc }) => [asc(lessons.order)],
-                    },
-                },
-            },
-        },
-    });
-
-    return data
-});
-
-export const getCourseProgress = cache(async () => {
-    const { userId } = await auth();
-    const userProgress = await getUserProgress();
-
-    // no progress to render for this user
-    if (!userId || !userProgress?.activeCourseId) {
-        return null;
+    if (completedMap.size === 0) {
+      // Fallback to challenge_progress aggregation
+      const { data: chals } = await supabaseAdmin
+        .from('challenges')
+        .select('id, lesson_id')
+        .in('lesson_id', lessonIds);
+      const byLesson = new Map<number, number[]>();
+      (chals || []).forEach((c: any) => {
+        byLesson.set(c.lesson_id, [...(byLesson.get(c.lesson_id) || []), c.id]);
+      });
+      const allChallengeIds = (chals || []).map((c: any) => c.id);
+      const { data: prog } = allChallengeIds.length
+        ? await supabaseAdmin
+            .from('challenge_progress')
+            .select('challenge_id, completed')
+            .eq('user_id', userId)
+            .in('challenge_id', allChallengeIds)
+        : { data: [] as any[] } as any;
+      const completedSet = new Set<number>((prog || []).filter((p: any) => !!p.completed).map((p: any) => p.challenge_id));
+      lessonIds.forEach((lid) => {
+        const cids = byLesson.get(lid) || [];
+        const done = cids.length > 0 && cids.every((cid) => completedSet.has(cid));
+        completedMap.set(lid, done);
+      });
     }
+  }
 
-    const unitsInActiveCourse = await db.query.units.findMany({
-        orderBy: (units, { asc }) => [asc(units.order)],
-        where: eq(units.courseId, userProgress.activeCourseId),
-        with: {
-            lessons: {
-                orderBy: (lessons, { asc }) => [asc(lessons.order)],
-                with: {
-                    unit: true,
-                    challenges: {
-                        with: {
-                            challengeProgress: {
-                                where: eq(challengeProgress.userId, userId),
-                            },
-                        },
-                    },
-                },
-            },
-        },
-    });
+  return data.map((u: any) => ({
+    ...u,
+    lessons: (u.lessons || []).map((l: any) => ({ ...l, completed: completedMap.get(l.id) || false })),
+  }));
+};
 
-    const firstUncompletedLesson = unitsInActiveCourse
-        .flatMap((unit) => unit.lessons)
-        .find((lesson) => {
-            return lesson.challenges.some((challenge) => {
-                // Warn: if crash check last if clause
-                return !challenge.challengeProgress || challenge.challengeProgress.length === 0 || challenge.challengeProgress.some((progress) => progress.completed === false);
-            });
-        });
+export const getCourses = async () => {
+  const { data } = await supabaseAdmin.from('courses').select('id, title, image_src');
+  return (data || []).map((c: any) => ({ id: c.id, title: c.title, imageSrc: c.image_src }));
+};
 
-    return {
-        activeLesson: firstUncompletedLesson,
-        activeLessonId: firstUncompletedLesson?.id,
-    };
-});
+export const getCourseById = async (courseId: number) => {
+  const { data, error } = await supabaseAdmin
+    .from('courses')
+    .select('id, title, image_src, units(id, order, lessons(id, order))')
+    .eq('id', courseId)
+    .maybeSingle();
+  if (error) return null;
+  return data as any;
+};
 
-export const getLesson = cache(async (id?: number) => {
-    const { userId } = await auth();
+export const getCourseProgress = async () => {
+  const userId = getUserId();
+  const progress = await getUserProgress();
+  if (!userId || !progress?.activeCourseId) return null as any;
+  // Load units and lessons
+  const { data: units } = await supabaseAdmin
+    .from('units')
+    .select('id, order, lessons(id, order)')
+    .eq('course_id', progress.activeCourseId)
+    .order('order', { ascending: true });
+  const lessons = (units || [])
+    .flatMap((u: any) => (u.lessons || []))
+    .sort((a: any, b: any) => a.order - b.order);
 
-    // if not authenticated do nothing (save process and resources)
-    if (!userId) {
-        return null;
+  // Determine which lessons are completed, prefer lesson_progress
+  const lessonIds: number[] = lessons.map((l: any) => l.id);
+  let completedMap = new Map<number, boolean>();
+  if (lessonIds.length) {
+    const { data: lprog, error: lpErr } = await supabaseAdmin
+      .from('lesson_progress' as any)
+      .select('lesson_id, completed')
+      .eq('user_id', userId)
+      .in('lesson_id', lessonIds);
+    if (!lpErr && lprog) {
+      (lprog || []).forEach((p: any) => completedMap.set(p.lesson_id, !!p.completed));
     }
-
-    const courseProgress = await getCourseProgress();
-
-    const lessonId = id || courseProgress?.activeLessonId;
-
-    if (!lessonId) {
-        return null;
+    if (completedMap.size === 0) {
+      const { data: chals } = await supabaseAdmin
+        .from('challenges')
+        .select('id, lesson_id')
+        .in('lesson_id', lessonIds);
+      const byLesson = new Map<number, number[]>();
+      (chals || []).forEach((c: any) => {
+        byLesson.set(c.lesson_id, [...(byLesson.get(c.lesson_id) || []), c.id]);
+      });
+      const allChallengeIds = (chals || []).map((c: any) => c.id);
+      const { data: prog } = allChallengeIds.length
+        ? await supabaseAdmin
+            .from('challenge_progress')
+            .select('challenge_id, completed')
+            .eq('user_id', userId)
+            .in('challenge_id', allChallengeIds)
+        : { data: [] as any[] } as any;
+      const completedSet = new Set<number>((prog || []).filter((p: any) => !!p.completed).map((p: any) => p.challenge_id));
+      lessonIds.forEach((lid) => {
+        const cids = byLesson.get(lid) || [];
+        const done = cids.length > 0 && cids.every((cid) => completedSet.has(cid));
+        completedMap.set(lid, done);
+      });
     }
+  }
 
-    const data = await db.query.lessons.findFirst({
-        where: eq(lessons.id, lessonId),
-        with: {
-            challenges: {
-                orderBy: (challenges, { asc }) => [asc(challenges.order)],
-                with: {
-                    challengeOptions: true,
-                    challengeProgress: {
-                        where: eq(challengeProgress.userId, userId),
-                    },
-                },
-            },
-        },
-    });
+  // Active lesson is the first not completed; if all completed, keep first
+  const active = lessons.find((l: any) => !completedMap.get(l.id)) || lessons[0] || null;
+  return {
+    activeLesson: active,
+  } as any;
+};
 
-    if (!data || !data.challenges) {
-        return null;
-    };
+export const getLesson = async (id?: number) => {
+  const userId = getUserId();
+  const progress = await getUserProgress();
+  if (!userId) return null as any;
 
-    const normalizedChallenges = data.challenges.map((challenge) => {
-        // Warn: if crash check last if clause
-        const completed = challenge.challengeProgress && challenge.challengeProgress.length > 0 && challenge.challengeProgress.every((progress) => progress.completed)
+  let lessonId = id;
+  if (!lessonId) {
+    if (!progress?.activeCourseId) return null as any;
+    const { data: first } = await supabaseAdmin
+      .from('lessons')
+      .select('id, order')
+      .eq('unit_id',
+        (
+          (await supabaseAdmin
+            .from('units')
+            .select('id')
+            .eq('course_id', progress.activeCourseId)
+            .order('order', { ascending: true })
+            .limit(1)).data?.[0]?.id || -1
+        )
+      )
+      .order('order', { ascending: true })
+      .limit(1);
+    lessonId = first?.[0]?.id;
+  }
+  if (!lessonId) return null as any;
 
-        return { ...challenge, completed: completed };
-    });
+  // Load lesson core
+  const { data: lesson, error: lErr } = await supabaseAdmin
+    .from('lessons')
+    .select('id, title, unit_id, order')
+    .eq('id', lessonId)
+    .maybeSingle();
+  if (lErr || !lesson) return null as any;
 
-    return { ...data, challenges: normalizedChallenges };
-});
+  // Load challenges and options; for Idzhar lessons (1..5) we compose from a shared pool
+  // to guarantee per-path variations and avoid practice mode carry-over.
+  let challenges: any[] | null = null;
+  let composedFromPool = false;
+  {
+    const res = await supabaseAdmin
+      .from('challenges')
+      .select('id, type, question, order, challenge_options(id, text, correct, image_src, audio_src)')
+      .eq('lesson_id', lesson.id)
+      .order('order', { ascending: true });
+    challenges = res.data || [];
+  }
 
-export const getLessonPercentage = cache(async () => {
-    const courseProgress = await getCourseProgress();
+  // Enforce curated 6-question mapping per path for Idzhar lessons (1..5) to avoid
+  // duplicating challenge rows while keeping deterministic order. If a lesson has its
+  // own challenges and matches expected count, we still use this curated set to ensure
+  // consistency as requested.
+  const curatedMap: Record<number, number[]> = {
+    1: [1001, 1002, 1003, 1004, 1005, 1006],
+    2: [1001, 1002, 1005, 1006, 1007, 1008],
+    3: [1001, 1002, 1007, 1008, 1009, 1010],
+    4: [1001, 1008, 1009, 1010, 1011, 1012],
+    5: [1002, 1010, 1011, 1012, 1013, 1014],
+  };
+  if ([1, 2, 3, 4, 5].includes(lesson.id)) {
+    const ids = curatedMap[lesson.id] || [];
+    const { data: base } = await supabaseAdmin
+      .from('challenges')
+      .select('id, type, question, order, challenge_options(id, text, correct, image_src, audio_src)')
+      .in('id', ids);
+    challenges = (base || []).sort((a: any, b: any) => ids.indexOf(a.id) - ids.indexOf(b.id));
+    composedFromPool = true;
+  } else if (!challenges || challenges.length === 0) {
+    // Non-Idzhar or missing data fallback: load whatever exists by lesson_id
+    challenges = [];
+  }
 
-    if (!courseProgress?.activeLessonId) {
-        return 0;
+  const ids = (challenges || []).map((c: any) => c.id);
+  let completedMap = new Map<number, boolean>();
+  if (ids.length) {
+    const { data: lprog, error: lpErr } = await supabaseAdmin
+      .from('lesson_progress' as any)
+      .select('lesson_id, completed')
+      .eq('user_id', userId)
+      .eq('lesson_id', lesson.id);
+    if (!lpErr && lprog && lprog.length) {
+      // If lesson is completed, challenges completed flags aren't needed by UI anymore
+      // but keep them false to avoid partial save semantics.
+    } else {
+      const { data: prog } = await supabaseAdmin
+        .from('challenge_progress')
+        .select('challenge_id, completed')
+        .eq('user_id', userId)
+        .in('challenge_id', ids);
+      (prog || []).forEach((p: any) => completedMap.set(p.challenge_id, !!p.completed));
     }
+  }
 
-    const lesson = await getLesson(courseProgress.activeLessonId);
+  return {
+    id: lesson.id,
+    title: lesson.title,
+    challenges: (challenges || []).map((c: any) => ({
+      id: c.id,
+      type: c.type,
+      question: c.question,
+      order: c.order,
+      // If this lesson is composed from a shared pool (i.e., challenges aren't owned
+      // by this lesson), treat them as not completed to avoid incorrectly entering
+      // practice mode when some of these challenges were completed in other lessons.
+      completed: composedFromPool ? false : (completedMap.get(c.id) || false),
+      challengeOptions: (c.challenge_options || []).map((o: any) => ({
+        id: o.id,
+        text: o.text,
+        correct: o.correct,
+        imageSrc: o.image_src ?? null,
+        audioSrc: o.audio_src ?? null,
+      })),
+    })),
+  } as any;
+};
 
-    if (!lesson) {
-        return 0;
-    }
+export const isLessonCompleted = async (lessonId: number) => {
+  const userId = getUserId();
+  if (!userId) return false;
+  const { data: lprog, error } = await supabaseAdmin
+    .from('lesson_progress' as any)
+    .select('lesson_id, completed')
+    .eq('user_id', userId)
+    .eq('lesson_id', lessonId)
+    .maybeSingle();
+  if (!error && lprog) return !!lprog.completed;
+  // Fallback: consider completed if all challenges completed
+  const { data: chals } = await supabaseAdmin
+    .from('challenges')
+    .select('id')
+    .eq('lesson_id', lessonId);
+  const ids = (chals || []).map((c: any) => c.id);
+  if (!ids.length) return false;
+  const { data: prog } = await supabaseAdmin
+    .from('challenge_progress')
+    .select('challenge_id, completed')
+    .in('challenge_id', ids);
+  const allDone = (prog || []).filter((p: any) => !!p.completed).length === ids.length;
+  return allDone;
+};
 
-    const completedChallenges = lesson.challenges.filter((challenge) => challenge.completed);
+export const getLessonPercentage = async () => 0;
 
-    const percentage = Math.round(
-        (completedChallenges.length / lesson.challenges.length) * 100,
-    );
-
-    return percentage;
-});
-
-const DAY_IN_MS = 86_400_000;
-export const getUserSubscription = cache(async () => {
-    const { userId } = await auth();
-
-    if (!userId) return null;
-
-    const data = await db.query.userSubscription.findFirst({
-        where: eq(userSubscription.userId, userId),
-    });
-
-    if (!data) return null;
-
-    const isActive =
-        data.stripePriceId &&
-        // month and an extra day
-        data.stripeCurrentPeriodEnd?.getTime()! + DAY_IN_MS > Date.now();
-
-    return {
-        ...data,
-        isActive: !!isActive,
-    };
-});
-
-// get top 10 users
-export const getTopTenUsers = cache(async () => {
-    const { userId } = await auth();
-
-    if (!userId) {
-        return [];
-    }
-
-    const data = await db.query.userProgress.findMany({
-        orderBy: (userProgress, { desc }) => [desc(userProgress.points)],
-        limit: 10,
-        columns: {
-            userId: true,
-            userName: true,
-            userImageSrc: true,
-            points: true,
-        },
-    });
-
-    return data;
-});
+export const getTopTenUsers = async () => {
+  // Without auth, return top by points globally (limit 10)
+  const { data, error } = await supabaseAdmin
+    .from('user_progress')
+    .select('user_id, user_name, user_image_src, points')
+    .order('points', { ascending: false })
+    .limit(10);
+  if (error || !data) return [];
+  return data.map((r: any) => ({
+    userId: r.user_id,
+    userName: r.user_name,
+    userImageSrc: r.user_image_src,
+    points: r.points,
+  }));
+};

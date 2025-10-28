@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
-import { ClerkProvider } from '@clerk/nextjs';
+// Clerk removed — using local auth
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 import { ExitModal } from "@/components/modals/exit-modal";
@@ -20,16 +20,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body className={font.className}>
-          <Toaster />
-          <ExitModal />
-          <HeartsModal />
-          <PracticeModal />
-          {children}
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en">
+      <body className={font.className}>
+        <Toaster />
+        <ExitModal />
+        <HeartsModal />
+        <PracticeModal />
+        {children}
+      </body>
+    </html>
   );
 }

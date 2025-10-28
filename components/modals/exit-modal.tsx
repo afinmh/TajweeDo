@@ -29,37 +29,36 @@ export const ExitModal = () => {
 
     return (
         <Dialog open={isOpen} onOpenChange={close}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="w-[min(92vw,480px)] max-w-[480px] p-4 sm:p-6 rounded-lg max-h-[90vh] overflow-auto">
                 <DialogHeader>
-                    <div className="flex items-center w-full justify-center mb-5">
+                    <div className="flex items-center w-full justify-center mb-3">
                         <Image
-                            src="/mascot_sad.svg"
+                            src="/back.png"
                             alt="mascot"
-                            height={80}
-                            width={80}
+                            height={120}
+                            width={120}
+                            className="w-24 h-24 sm:w-32 sm:h-32"
                         />
                     </div>
-                    <DialogTitle className="text-center font-bold text-2xl">
+                    <DialogTitle className="text-center font-bold text-lg sm:text-2xl">
                         Wait, don&apos;t go!
                     </DialogTitle>
-                    <DialogDescription className="text-center text-base">
-                        You&apos;re about to leave the lesson. Are you Sure?
+                    <DialogDescription className="text-center text-xs sm:text-sm text-muted-foreground">
+                        You&apos;re about to leave the lesson. Are you sure?
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="mb-4">
                     <div className="flex flex-col gap-y-4 w-full">
                         <Button
                             variant="primary"
-                            className="w-full"
-                            size="lg"
+                            className="w-full text-sm sm:text-base py-2 sm:py-3"
                             onClick={close}
                         >
                             Keep learning
                         </Button>
                         <Button
                             variant="dangerOutline"
-                            className="w-full"
-                            size="lg"
+                            className="w-full text-sm sm:text-base py-2 sm:py-3"
                             onClick={() => {
                                 close();
                                 router.push("/learn");

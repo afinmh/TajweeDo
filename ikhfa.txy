@@ -1,0 +1,105 @@
+Ikhfa’ Haqiqi
+1. Penjelasan Ikhfa’
+type: SELECT_ALL
+content: “Ikhfa’ terjadi bila nun mati (نْ) atau tanwin bertemu dengan salah satu dari 15 huruf berikut. Bacaan diucapkan samar antara idgham dan idzhar, disertai dengung.”
+interaktif (contoh):
+مَنْ صَبَرَ
+أَنْفُسِهِمْ
+شَيْئًا فَشَرٌّ
+مَنْ دَخَلَ
+
+2. Huruf-huruf Ikhfa’
+type: SELECT_ALL
+content: “Huruf-huruf Ikhfa’ adalah: ت، ث، ج، د، ذ، ز، س، ش، ص، ض، ط، ظ، ف، ق، ك.”
+options: ت، ث، ج، د، ذ، ز، س، ش، ص، ض، ط، ظ، ف، ق، ك ✅
+
+3. (SELECT)
+question: “Berapa jumlah huruf Ikhfa’?”
+✅ 15
+14
+16
+17
+
+4. (SELECT)
+question: “Bagaimana cara membaca nun mati atau tanwin saat bertemu huruf Ikhfa’?”
+✅ Dibaca samar disertai dengung
+Dibaca jelas tanpa dengung
+Dibaca seperti idgham
+Dibaca panjang
+
+5. (SELECT)
+question: “Huruf ‘ت’ termasuk hukum bacaan…”
+✅ Ikhfa’
+Idzhar
+Iqlab
+Idgham
+
+6. (SELECT)
+question: “Contoh bacaan Ikhfa’ terdapat dalam lafaz…”
+✅ مَنْ صَبَرَ
+سَمِيعٌۢ بَصِيرٌ
+مِنْ مَالٍ
+مِنْ عِلْمٍ
+
+7. (SELECT)
+question: “Apa arti ‘Ikhfa’’ secara bahasa?”
+✅ Menyembunyikan
+Mengganti
+Menyamakan
+Mendengungkan
+
+8. (SELECT)
+question: “Apa arti ‘Ikhfa’’ secara istilah?”
+✅ Membaca nun mati atau tanwin dengan samar antara idgham dan idzhar disertai dengung
+Mengganti bunyi nun menjadi mim
+Mendengungkan dua huruf yang sama
+Menghilangkan huruf nun
+
+9. (SELECT)
+question: “Bacaan ‘مَنْ صَبَرَ’ termasuk hukum…”
+✅ Ikhfa’
+Iqlab
+Idzhar
+Idgham Bighunnah
+
+10. (SELECT)
+question: “Huruf ‘د’ menyebabkan bacaan…”
+✅ Ikhfa’
+Idgham
+Iqlab
+Idzhar
+
+11. (SELECT)
+question: “Berikut ini contoh bukan bacaan Ikhfa’ adalah…”
+✅ سَمِيعٌۢ بَصِيرٌ
+مَنْ صَبَرَ
+شَيْئًا فَشَرٌّ
+أَنْفُسِهِمْ
+
+12. (SELECT)
+question: “Bila nun mati bertemu huruf ‘ق’, maka dibaca…”
+✅ Ikhfa’
+Idgham
+Iqlab
+Idzhar
+
+13. (SELECT)
+question: “Berapa lama dengung dalam bacaan Ikhfa’?”
+✅ Sekitar dua harakat
+Satu harakat
+Empat harakat
+Tidak perlu dengung
+
+14. (SELECT)
+question: “Bacaan ‘شَيْئًا فَشَرٌّ’ termasuk hukum…”
+✅ Ikhfa’
+Iqlab
+Idzhar
+Idgham
+
+15. (SELECT)
+question: “Ciri khas Ikhfa’ dibanding hukum tajwid lain adalah…”
+✅ Bacaan samar disertai dengung
+Hurufnya jelas dan terang
+Ada huruf mim kecil
+Bertemu huruf idgham

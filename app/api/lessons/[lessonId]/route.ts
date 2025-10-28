@@ -1,48 +1,103 @@
-import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import db from "@/db/drizzle";
-import { lessons } from "@/db/schema";
 import { isAdmin } from "@/lib/admin";
+import { supabaseAdmin } from "@/lib/supabase";
 
-export const GET = async (req: Request,
+export const GET = async (
+    req: Request,
     { params }: { params: { lessonId: number } },
 ) => {
     if (!isAdmin()) {
         return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const id = Number(params.lessonId);
+    const { data, error } = await supabaseAdmin
+        .from('lessons')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (error && error.code !== 'PGRST116') {
+        return new NextResponse(error.message, { status: 500 });
+    }
+    if (!data) {
+        return new NextResponse("Lesson not found", { status: 404 });
+    }
+
+    const mapped = {
+        id: data.id,
+        title: data.title,
+        unitId: data.unit_id,
+        order: data.order,
     };
 
-    const data = await db.query.lessons.findFirst({
-        where: eq(lessons.id, params.lessonId),
-    });
-
-    return NextResponse.json(data);
+    return NextResponse.json(mapped);
 };
 
-export const PUT = async (req: Request,
+export const PUT = async (
+    req: Request,
     { params }: { params: { lessonId: number } },
 ) => {
     if (!isAdmin()) {
         return new NextResponse("Unauthorized", { status: 401 });
-    };
+    }
 
+    const id = Number(params.lessonId);
     const body = await req.json();
+    const payload = {
+        title: body.title,
+        unit_id: body.unitId,
+        order: body.order,
+    };
 
-    const data = await db.update(lessons).set({
-        ...body,
-    }).where(eq(lessons.id, params.lessonId)).returning();
+    const { data, error } = await supabaseAdmin
+        .from('lessons')
+        .update(payload)
+        .eq('id', id)
+        .select('*')
+        .single();
 
-    return NextResponse.json(data[0]);
+    if (error) {
+        return new NextResponse(error.message, { status: 500 });
+    }
+
+    const mapped = {
+        id: data.id,
+        title: data.title,
+        unitId: data.unit_id,
+        order: data.order,
+    };
+
+    return NextResponse.json(mapped);
 };
 
-export const DELETE = async (req: Request,
+export const DELETE = async (
+    req: Request,
     { params }: { params: { lessonId: number } },
 ) => {
     if (!isAdmin()) {
         return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const id = Number(params.lessonId);
+    const { data, error } = await supabaseAdmin
+        .from('lessons')
+        .delete()
+        .eq('id', id)
+        .select('*')
+        .single();
+
+    if (error) {
+        return new NextResponse(error.message, { status: 500 });
+    }
+
+    const mapped = {
+        id: data.id,
+        title: data.title,
+        unitId: data.unit_id,
+        order: data.order,
     };
 
-    const data = await db.delete(lessons).where(eq(lessons.id, params.lessonId)).returning();
-
-    return NextResponse.json(data[0]);
+    return NextResponse.json(mapped);
 };

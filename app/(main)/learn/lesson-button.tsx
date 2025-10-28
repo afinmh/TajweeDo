@@ -49,7 +49,8 @@ export const LessonButton = ({
 
     const Icon = isCompleted ? Check : isLast ? Crown : Star;
 
-    const href = isCompleted ? `/lesson/${id}` : "/lesson";
+    // Always navigate to the specific lesson page
+    const href = `/lesson/${id}`;
 
     return (
         <Link

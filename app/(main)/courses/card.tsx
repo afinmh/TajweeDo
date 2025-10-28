@@ -24,15 +24,13 @@ export const Card = ({
             onClick={() => onClick(id)}
             className={cn(
                 "w-full max-w-[220px] sm:max-w-[260px] border-2 rounded-xl hover:bg-black/5 cursor-pointer active:border-b-2 flex flex-col items-center justify-between p-3 pb-6",
-                disabled && "pointer-events-none opacity-50"
+                disabled && "pointer-events-none opacity-50",
+                // active state styles: subtle green background and border
+                active && "bg-green-50 border-green-200"
             )}
         >
             <div className="w-full flex items-center justify-end">
-                {active && (
-                    <div className="rounded-md bg-green-600 flex items-center justify-center p-1.5">
-                        <Check className="text-white stroke-[4] h-4 w-4" />
-                    </div>
-                )}
+                {/* no checkmark anymore — selected state is shown via green card background */}
             </div>
 
             <div className="mt-2 flex items-center justify-center w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden drop-shadow-md bg-transparent">
@@ -45,7 +43,7 @@ export const Card = ({
                 />
             </div>
 
-            <p className="text-neutral-700 text-center font-bold mt-3 text-sm sm:text-base">
+            <p className={cn("text-center font-bold mt-3 text-sm sm:text-base", active ? "text-green-700" : "text-neutral-700")}>
                 {title}
             </p>
         </div>
