@@ -9,6 +9,7 @@ import {
     getUserProgress
 } from "@/db/queries";
 import { redirect } from "next/navigation";
+import NeedCourse from "@/components/need-course";
 import { Unit } from "./unit";
 // types moved off Drizzle; using structural types
 import { Promo } from "@/components/promo";
@@ -35,12 +36,12 @@ const LearnPage = async () => {
 
     // if no check we will need ? for typeof as well as where there is userProgress.active etc.
     if (!userProgress || !userProgress.activeCourse) {
-        // acts as return nothing will run after this redirect
-        redirect("/courses");
+        // show a friendly warning instead of a hard redirect
+        return <NeedCourse />;
     }
 
     if (!courseProgress) {
-        redirect("/courses");
+        return <NeedCourse />;
     }
 
     const isPro = false;

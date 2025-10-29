@@ -2,6 +2,7 @@ import { FeedWrapper } from "@/components/feed-wrapper";
 import { StickyWrapper } from "@/components/sticky-wrapper";
 import { UserProgress } from "@/components/user-progress";
 import { getUserProgress } from "@/db/queries";
+import NeedCourse from "@/components/need-course";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -18,7 +19,7 @@ const QuestsPage = async () => {
     ]);
 
     if (!userProgress || !userProgress.activeCourse) {
-        redirect("/courses");
+        return <NeedCourse />;
     };
 
     const isPro = false

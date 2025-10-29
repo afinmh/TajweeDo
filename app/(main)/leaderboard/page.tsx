@@ -8,6 +8,7 @@ import { UserProgress } from "@/components/user-progress";
 import { getTopTenUsers, getUserProgress } from "@/db/queries";
 import Image from "next/image";
 import { redirect } from "next/navigation";
+import NeedCourse from "@/components/need-course";
 
 const LeaderboardPage = async () => {
     const userProgressData = getUserProgress();
@@ -22,7 +23,7 @@ const LeaderboardPage = async () => {
     ]);
 
     if (!userProgress || !userProgress.activeCourse) {
-        redirect("/courses");
+        return <NeedCourse />;
     };
 
     const isPro = false

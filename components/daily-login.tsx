@@ -13,46 +13,54 @@ export default function DailyLogin() {
   const [reward, setReward] = useState<Reward>(null);
   const [total, setTotal] = useState<number | null>(null);
   const [rewardsMap, setRewardsMap] = useState<Record<number, { points?: number; item_id?: number }>>({});
+  const [claimedToday, setClaimedToday] = useState<boolean>(false);
+  const [hideToday, setHideToday] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  // Helper: refresh rewards and state, and auto-open if server says so
+  const refreshState = async (autoOpen = true) => {
+    try {
+      const rres = await fetch('/api/daily-login', { method: 'GET', cache: 'no-store' });
+      if (!rres.ok) return;
+      const data = await rres.json();
+      if (Array.isArray(data.rewards)) {
+        const map: Record<number, any> = {};
+        data.rewards.forEach((it: any) => { map[it.day] = { points: it.points, item_id: it.item_id }; });
+        setRewardsMap(map);
+      }
+      if (data.state) {
+        setDay(data.state.day || null);
+        setReward(data.state.reward || null);
+        setTotal(data.state.totalLogins || null);
+        setClaimedToday(!!data.state.status);
+        setHideToday(!!data.state.view);
+        if (autoOpen && data.state.show) setOpen(true);
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      try {
-        // fetch rewards table (for badges/tooltips)
-        const rres = await fetch('/api/daily-login', { method: 'GET' });
-        if (rres.ok) {
-          const rd = await rres.json().catch(() => ({ rewards: [] }));
-          if (mounted && Array.isArray(rd.rewards)) {
-            const map: Record<number, any> = {};
-            rd.rewards.forEach((it: any) => { map[it.day] = { points: it.points, item_id: it.item_id }; });
-            setRewardsMap(map);
-          }
-        }
-
-        // then claim today's reward (idempotent - returns already_claimed if done)
-        const res = await fetch('/api/daily-login', { method: 'POST' });
-        if (!res.ok) return;
-        const j = await res.json();
-        if (!mounted) return;
-        setDay(j.day || null);
-        setReward(j.reward || null);
-        setTotal(j.totalLogins || j.total_logins || null);
-        setOpen(true);
-      } catch {
-        // ignore
-      }
+      if (!mounted) return;
+      await refreshState(true);
     })();
     return () => { mounted = false; };
   }, []);
 
   // Allow opening the modal from anywhere via a custom event
   useEffect(() => {
-    const handler = () => setOpen(true);
+    const handler = async () => {
+      await refreshState(false);
+      setOpen(true);
+    };
     window.addEventListener('open-daily-login', handler as EventListener);
     return () => window.removeEventListener('open-daily-login', handler as EventListener);
   }, []);
 
-  const cycleDay = day ?? (((total || 0) - 1) % 30) + 1;
+  const todayIndex = day ?? (((total || 0) % 30) + 1);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -63,19 +71,25 @@ export default function DailyLogin() {
             Daily Login
           </DialogTitle>
         </DialogHeader>
-  <div className="text-center text-slate-600 -mt-1 mb-2">
+        <div className="text-center text-slate-600 -mt-1 mb-2">
           {reward?.points ? (
-            <div className="inline-flex items-center gap-1 text-emerald-600 font-semibold">
-              <Image src="/points.svg" alt="Points" width={18} height={18} /> +{reward.points}
-            </div>
+            claimedToday ? (
+              <div className="inline-flex items-center gap-1 text-emerald-600 font-semibold">
+                <Image src="/points.svg" alt="Points" width={18} height={18} /> +{reward.points}
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-1 text-emerald-600">
+                Siap klaim <Image src="/points.svg" alt="Points" width={16} height={16} /> +{reward.points}
+              </div>
+            )
           ) : (
             <div className="text-slate-500 text-sm">Selamat datang kembali!</div>
           )}
         </div>
-        <div className="grid grid-cols-6 gap-1 sm:gap-2 px-1 sm:px-0">
+  <div className="grid grid-cols-6 gap-[3px] sm:gap-2 px-1 sm:px-0">
           {Array.from({ length: 30 }, (_, i) => i + 1).map((d) => {
-            const done = d <= (cycleDay || 0);
-            const isToday = d === (cycleDay || 0);
+            const isToday = d === (todayIndex || 0);
+            const done = d < (todayIndex || 0) || (claimedToday && isToday);
             const meta = rewardsMap[d];
             const titleText = meta
               ? meta.item_id
@@ -124,10 +138,57 @@ export default function DailyLogin() {
             );
           })}
         </div>
-        {/* Removed hover info area per request (compact modal) */}
-
-        <div className="flex justify-center pt-2">
-          <Button onClick={() => setOpen(false)} className="px-6 border-2 border-slate-200 rounded-lg">Tutup</Button>
+        {/* Controls: hide today bottom-left on mobile + single action button */}
+        <div className="mt-2 pt-2 relative min-h-[48px]">
+          <label className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 absolute left-1 bottom-1 sm:static sm:left-auto sm:bottom-auto">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-emerald-600"
+              checked={hideToday}
+              onChange={async (e) => {
+                const v = e.target.checked;
+                setHideToday(v);
+                try {
+                  await fetch('/api/daily-login', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ view: v }),
+                  });
+                  if (v) setOpen(false);
+                } catch {}
+              }}
+            />
+            Sembunyikan hari ini
+          </label>
+          <div className="w-full flex justify-end">
+            <Button
+              disabled={loading}
+              onClick={async () => {
+                if (claimedToday) {
+                  setOpen(false);
+                  return;
+                }
+                try {
+                  setLoading(true);
+                  const res = await fetch('/api/daily-login', { method: 'POST' });
+                  if (res.ok) {
+                    const j = await res.json();
+                    if (j?.status === 'claimed' || j?.status === 'already_claimed') {
+                      setDay(j.day || null);
+                      setReward(j.reward || null);
+                      setTotal(j.totalLogins || j.total_logins || null);
+                      setClaimedToday(true);
+                    }
+                  }
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              className="px-4"
+            >
+              {claimedToday ? 'Tutup' : (loading ? 'Memproses…' : 'Claim')}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

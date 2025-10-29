@@ -4,6 +4,7 @@ import { UserProgress } from "@/components/user-progress";
 import { getUserProgress } from "@/db/queries";
 import Image from "next/image";
 import { redirect } from "next/navigation";
+import NeedCourse from "@/components/need-course";
 import { Items } from "./items";
 import { Promo } from "@/components/promo";
 import { Quests } from "@/components/quests";
@@ -18,7 +19,7 @@ const ShopPage = async () => {
     ]);
 
     if(!userProgress || !userProgress.activeCourse){
-        redirect("/courses");
+        return <NeedCourse />;
     };
 
     const isPro = false
