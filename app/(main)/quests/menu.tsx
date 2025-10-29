@@ -18,21 +18,29 @@ export default function QuestsMenu() {
       <button
         type="button"
         onClick={openDailyLogin}
-        className="w-full border rounded-xl p-4 flex flex-col items-center gap-2 hover:border-emerald-400 active:scale-[0.99] transition"
+        className="w-full border rounded-xl p-4 flex items-center gap-4 hover:border-emerald-400 active:scale-[0.99] transition"
       >
-        <Image src="/calender.png" alt="Daily Login" width={48} height={48} />
-        <div className="text-base font-semibold text-slate-700">Daily Login</div>
-        <div className="text-xs text-slate-500">Klaim hadiah harianmu</div>
+        <div className="flex-shrink-0">
+          <Image src="/calender.png" alt="Daily Login" width={48} height={48} className="rounded-md" />
+        </div>
+        <div className="flex-1 text-left">
+          <div className="text-base font-semibold text-slate-700">Login Harian</div>
+          <div className="text-xs text-slate-500">Klaim hadiah harianmu</div>
+        </div>
       </button>
 
       <button
         type="button"
         onClick={() => router.push("/daily")}
-        className="w-full border rounded-xl p-4 flex flex-col items-center gap-2 hover:border-emerald-400 active:scale-[0.99] transition"
+        className="w-full border rounded-xl p-4 flex items-center gap-4 hover:border-emerald-400 active:scale-[0.99] transition"
       >
-        <Image src="/quests.svg" alt="Daily Quest" width={48} height={48} />
-        <div className="text-base font-semibold text-slate-700">Daily Quest</div>
-        <div className="text-xs text-slate-500">Tantangan harian</div>
+        <div className="flex-shrink-0">
+          <Image src="/puzzle.png" alt="Daily Quest" width={48} height={48} className="rounded-md" />
+        </div>
+        <div className="flex-1 text-left">
+          <div className="text-base font-semibold text-slate-700">Misi Harian</div>
+          <div className="text-xs text-slate-500">Tantangan harian</div>
+        </div>
       </button>
     </div>
   );

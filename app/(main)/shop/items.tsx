@@ -48,11 +48,11 @@ export const Items = ({
     const getRequirement = (name: string): string => {
         const n = (name || '').toLowerCase();
         if (n.includes('bahlil')) return 'Selesaikan 5 misi harian';
-        if (n.includes('sultan')) return 'Beli semua item di toko';
-        if (n.includes('bunga')) return 'Streak 7 hari';
-        if (n.includes('bintang')) return 'Streak 15 hari';
-        if (n.includes('kelinci')) return 'Streak 22 hari';
-        if (n.includes('kucing')) return 'Streak 30 hari';
+        if (n.includes('sultan')) return 'Beli semua item yang ada di toko';
+        if (n.includes('bunga')) return 'Login 7 hari';
+        if (n.includes('bintang')) return 'Login 15 hari';
+        if (n.includes('kelinci')) return 'Login 22 hari';
+        if (n.includes('kucing')) return 'Login 30 hari';
         if (n.includes('burger')) return 'Selesaikan 1 materi pembelajaran';
         if (n.includes('batman')) return 'Selesaikan 2 materi pembelajaran';
         if (n.includes('iron') || n.includes('iron man')) return 'Selesaikan 4 materi pembelajaran';

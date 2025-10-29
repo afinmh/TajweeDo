@@ -119,3 +119,17 @@ export const POST = async (req: Request) => {
     totalLogins,
   });
 };
+
+// Public: return the full daily rewards table so the client can render badges/tooltips
+export const GET = async () => {
+  try {
+    const { data } = await supabaseAdmin
+      .from('daily_login_rewards')
+      .select('day, points, item_id')
+      .order('day', { ascending: true });
+
+    return NextResponse.json({ rewards: data || [] });
+  } catch (err) {
+    return NextResponse.json({ rewards: [] });
+  }
+};

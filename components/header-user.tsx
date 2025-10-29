@@ -42,9 +42,9 @@ export default function HeaderUser() {
                     onClick={() => setOpen(v => !v)}
                     aria-haspopup="menu"
                     aria-expanded={open}
-                    className="h-9 w-9 rounded-full bg-emerald-600 flex items-center justify-center overflow-hidden"
+                    className="h-9 w-9 rounded-full flex items-center justify-center overflow-hidden"
                 >
-                    <Image src={imgSrc} alt="Profile" width={36} height={36} />
+                    <Image src={imgSrc} alt="Profile" width={36} height={36} className="rounded-full" />
                 </button>
             </div>
 

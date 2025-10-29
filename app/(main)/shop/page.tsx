@@ -51,7 +51,7 @@ const ShopPage = async () => {
                         Shop
                     </h1>
                     <p className="text-muted-foreground text-center text-lg mb-6">
-                        Ayo tukar poin kamu jadi barang keren!
+                        Ayo tukar poinmu jadi barang keren!
                     </p>
                     <Items 
                         hearts={userProgress.hearts}
