@@ -54,7 +54,7 @@ export const ExitModal = () => {
                             className="w-full text-sm sm:text-base py-2 sm:py-3"
                             onClick={close}
                         >
-                            Keep learning
+                            Gajadi
                         </Button>
                         <Button
                             variant="dangerOutline"
@@ -64,7 +64,7 @@ export const ExitModal = () => {
                                 router.push("/learn");
                             }}
                         >
-                            End Session
+                            Tinggalin Aja
                         </Button>
                     </div>
                 </DialogFooter>

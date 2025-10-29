@@ -39,10 +39,10 @@ export const PracticeModal = () => {
                         />
                     </div>
                     <DialogTitle className="text-center font-bold text-lg sm:text-2xl">
-                        Waktu Latihan
+                        Muroja'ah
                     </DialogTitle>
                     <DialogDescription className="text-center text-sm sm:text-base">
-                        Anda tidak akan kehilangan poin atau hati dalam pelajaran latihan.
+                        Kamu gaakan kehilangan nyawa waktu muroja'ah.
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="mb-4">
@@ -52,7 +52,7 @@ export const PracticeModal = () => {
                             className="w-full text-sm sm:text-base py-2 sm:py-3"
                             onClick={close}
                         >
-                            I Understand
+                            Wooke!
                         </Button>
                     </div>
                 </DialogFooter>
