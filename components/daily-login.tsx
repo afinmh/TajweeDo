@@ -177,8 +177,6 @@ export default function DailyLogin() {
                 }
                 try {
                   setLoading(true);
-                  // Play sound when starting claim process
-                  playMoney();
                   const res = await fetch('/api/daily-login', { method: 'POST' });
                   if (res.ok) {
                     const j = await res.json();
@@ -187,7 +185,7 @@ export default function DailyLogin() {
                       setReward(j.reward || null);
                       setTotal(j.totalLogins || j.total_logins || null);
                       setClaimedToday(true);
-                      // Play sound on successful claim
+                      // Play sound only when a new claim succeeds (checkmark applied)
                       if (j?.status === 'claimed') {
                         playMoney();
                       }

@@ -76,11 +76,17 @@ export const Items = ({
         toast.info("Langganan dinonaktifkan");
     };
 
-    const playMoney = () => {
+    const playMoney = async () => {
         try {
             const a = new Audio('/audio/money.mp3');
-            // Fire-and-forget; ignore promise rejection (autoplay policies)
-            void a.play();
+            // Play and wait until it ends or timeout after 5s
+            await a.play().catch(() => {});
+            await new Promise<void>((resolve) => {
+                const done = () => resolve();
+                a.addEventListener('ended', done, { once: true });
+                // Safety timeout in case 'ended' doesn't fire
+                setTimeout(done, 5000);
+            });
         } catch {}
     };
 
@@ -106,8 +112,8 @@ export const Items = ({
                     toast.info('Sudah dimiliki');
                 } else {
                     toast.success('Berhasil dibeli');
-                    // Play cash sound on successful purchase
-                    playMoney();
+                    // Play cash sound on successful purchase and wait before refreshing
+                    await playMoney();
                 }
                 // optimistic: mark purchased; refresh page for points
                 setShopItems((prev) => prev.map(it => it.id === itemId ? { ...it, purchased: true } : it));

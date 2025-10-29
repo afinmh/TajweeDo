@@ -212,20 +212,22 @@ export const Quiz = ({
                         Great Job! <br />
                         You have completed the lesson.
                     </h1>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full">
+                    <div className="grid grid-cols-2 gap-4 w-full">
                         <ResultCard
                             variant="points"
                             value={challenges.length * 25}
-                        />
-                        <ResultCard
-                            variant="xp"
-                            value={challenges.length * 100}
                         />
                         <ResultCard
                             variant="hearts"
                             value={hearts}
                             userSubscription={!!userSubscription}
                         />
+                        <div className="col-span-2 justify-self-center w-full max-w-[280px]">
+                            <ResultCard
+                                variant="xp"
+                                value={challenges.length * 100}
+                            />
+                        </div>
                     </div>
                 </div>
                 <Footer

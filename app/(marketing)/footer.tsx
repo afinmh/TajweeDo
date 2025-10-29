@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export const Footer = () => {
     return (
@@ -6,7 +7,7 @@ export const Footer = () => {
             <div className="max-w-screen-lg mx-auto flex items-center justify-between h-full px-4">
                 <div className="flex items-center gap-4">
                     <div aria-hidden className="p-2">
-                        <img src="/mascot.svg" alt="Maskot" className="w-8 h-8" />
+                        <Image src="/mascot.svg" alt="Maskot" width={32} height={32} className="w-8 h-8" />
                     </div>
                     <div>
                         <h3 className="text-lg font-semibold">Belajar Tajwid Seru</h3>

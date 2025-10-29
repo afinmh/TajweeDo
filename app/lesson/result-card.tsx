@@ -21,21 +21,21 @@ export const ResultCard = ({
             "rounded-2xl border-2 w-full",
             variant === "points" && "bg-orange-400 border-orange-400",
             variant === "hearts" && "bg-rose-500 border-rose-500",
-            variant === "xp" && "bg-indigo-500 border-indigo-500",
+            variant === "xp" && "bg-emerald-500 border-emerald-500",
         )}>
             <div className={cn(
                 "p-1.5 text-white rounded-t-xl font-bold text-center uppercase text-xs",
                 variant === "hearts" && "bg-rose-500",
                 variant === "points" && "bg-orange-400",
-                variant === "xp" && "bg-indigo-500",
+                variant === "xp" && "bg-emerald-500",
             )}>
-                {variant === "hearts" ? "Hearts Left" : variant === "points" ? "Points" : "XP"}
+                {variant === "hearts" ? "Heart" : variant === "points" ? "Points" : "Experience"}
             </div>
             <div className={cn(
                 "rounded-2xl bg-white items-center flex justify-center p-6 font-bold text-xl",
                 variant === "hearts" && "text-rose-500",
                 variant === "points" && "text-orange-500",
-                variant === "xp" && "text-indigo-600",
+                variant === "xp" && "text-emerald-600",
             )}>
                 <Image
                     alt="icon"

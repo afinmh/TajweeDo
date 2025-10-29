@@ -39,10 +39,10 @@ export const PracticeModal = () => {
                         />
                     </div>
                     <DialogTitle className="text-center font-bold text-lg sm:text-2xl">
-                        Muroja'ah
+                        Muroja&apos;ah
                     </DialogTitle>
                     <DialogDescription className="text-center text-sm sm:text-base">
-                        Kamu gaakan kehilangan nyawa waktu muroja'ah.
+                        Kamu gaakan kehilangan nyawa waktu muroja&apos;ah.
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="mb-4">
