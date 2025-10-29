@@ -19,7 +19,7 @@ export const getUserProgress = async () => {
 
   const { data, error } = await supabaseAdmin
     .from('user_progress')
-    .select('user_id, user_name, user_image_src, active_course_id, hearts, points, active_course:courses(*)')
+    .select('user_id, user_name, user_image_src, active_course_id, hearts, points, xp, active_course:courses(*)')
     .eq('user_id', userId)
     .maybeSingle();
   if (error) return null;
@@ -31,19 +31,22 @@ export const getUserProgress = async () => {
     activeCourseId: data.active_course_id,
     hearts: data.hearts,
     points: data.points,
+    xp: (data as any).xp ?? 0,
     activeCourse: data.active_course || null,
   } as any;
 };
 
-export const getUnits = async () => {
-  const userId = getUserId();
-  const progress = await getUserProgress();
-  if (!userId || !progress?.activeCourseId) return [] as any[];
+type Ctx = { userId: string; activeCourseId: number };
+
+export const getUnits = async (ctx?: Ctx) => {
+  const userId = ctx?.userId ?? getUserId();
+  const activeCourseId = ctx?.activeCourseId ?? (await getUserProgress())?.activeCourseId;
+  if (!userId || !activeCourseId) return [] as any[];
 
   const { data, error } = await supabaseAdmin
     .from('units')
     .select('id, title, description, order, lessons(id, title, order)')
-    .eq('course_id', progress.activeCourseId)
+  .eq('course_id', activeCourseId)
     .order('order', { ascending: true });
   if (error || !data) return [];
   // Prefer lesson_progress; fallback to challenge_progress if not available
@@ -110,15 +113,15 @@ export const getCourseById = async (courseId: number) => {
   return data as any;
 };
 
-export const getCourseProgress = async () => {
-  const userId = getUserId();
-  const progress = await getUserProgress();
-  if (!userId || !progress?.activeCourseId) return null as any;
+export const getCourseProgress = async (ctx?: Ctx) => {
+  const userId = ctx?.userId ?? getUserId();
+  const activeCourseId = ctx?.activeCourseId ?? (await getUserProgress())?.activeCourseId;
+  if (!userId || !activeCourseId) return null as any;
   // Load units and lessons
   const { data: units } = await supabaseAdmin
     .from('units')
     .select('id, order, lessons(id, order)')
-    .eq('course_id', progress.activeCourseId)
+  .eq('course_id', activeCourseId)
     .order('order', { ascending: true });
   const lessons = (units || [])
     .flatMap((u: any) => (u.lessons || []))
@@ -169,14 +172,14 @@ export const getCourseProgress = async () => {
   } as any;
 };
 
-export const getLesson = async (id?: number) => {
-  const userId = getUserId();
-  const progress = await getUserProgress();
+export const getLesson = async (id?: number, ctx?: Partial<Ctx>) => {
+  const userId = ctx?.userId ?? getUserId();
+  const activeCourseId = ctx?.activeCourseId ?? (await getUserProgress())?.activeCourseId;
   if (!userId) return null as any;
 
   let lessonId = id;
   if (!lessonId) {
-    if (!progress?.activeCourseId) return null as any;
+    if (!activeCourseId) return null as any;
     const { data: first } = await supabaseAdmin
       .from('lessons')
       .select('id, order')
@@ -185,7 +188,7 @@ export const getLesson = async (id?: number) => {
           (await supabaseAdmin
             .from('units')
             .select('id')
-            .eq('course_id', progress.activeCourseId)
+            .eq('course_id', activeCourseId)
             .order('order', { ascending: true })
             .limit(1)).data?.[0]?.id || -1
         )
@@ -208,14 +211,6 @@ export const getLesson = async (id?: number) => {
   // to guarantee per-path variations and avoid practice mode carry-over.
   let challenges: any[] | null = null;
   let composedFromPool = false;
-  {
-    const res = await supabaseAdmin
-      .from('challenges')
-      .select('id, type, question, order, challenge_options(id, text, correct, image_src, audio_src)')
-      .eq('lesson_id', lesson.id)
-      .order('order', { ascending: true });
-    challenges = res.data || [];
-  }
 
   // Enforce curated 6-question mapping per path for Idzhar lessons (1..5) to avoid
   // duplicating challenge rows while keeping deterministic order. If a lesson has its
@@ -236,9 +231,14 @@ export const getLesson = async (id?: number) => {
       .in('id', ids);
     challenges = (base || []).sort((a: any, b: any) => ids.indexOf(a.id) - ids.indexOf(b.id));
     composedFromPool = true;
-  } else if (!challenges || challenges.length === 0) {
-    // Non-Idzhar or missing data fallback: load whatever exists by lesson_id
-    challenges = [];
+  } else {
+    // Non-Idzhar: load by lesson_id
+    const res = await supabaseAdmin
+      .from('challenges')
+      .select('id, type, question, order, challenge_options(id, text, correct, image_src, audio_src)')
+      .eq('lesson_id', lesson.id)
+      .order('order', { ascending: true });
+    challenges = res.data || [];
   }
 
   const ids = (challenges || []).map((c: any) => c.id);
@@ -316,14 +316,14 @@ export const getTopTenUsers = async () => {
   // Without auth, return top by points globally (limit 10)
   const { data, error } = await supabaseAdmin
     .from('user_progress')
-    .select('user_id, user_name, user_image_src, points')
-    .order('points', { ascending: false })
+    .select('user_id, user_name, user_image_src, xp')
+    .order('xp', { ascending: false })
     .limit(10);
   if (error || !data) return [];
   return data.map((r: any) => ({
     userId: r.user_id,
     userName: r.user_name,
     userImageSrc: r.user_image_src,
-    points: r.points,
+    xp: r.xp ?? 0,
   }));
 };

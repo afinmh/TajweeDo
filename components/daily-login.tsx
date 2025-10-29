@@ -62,13 +62,20 @@ export default function DailyLogin() {
 
   const todayIndex = day ?? (((total || 0) % 30) + 1);
 
+  const playMoney = () => {
+    try {
+      const a = new Audio('/audio/money.mp3');
+      void a.play();
+    } catch {}
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="w-[88vw] max-w-md rounded-2xl p-6 sm:p-8 bg-white border border-slate-100 shadow-lg">
         <DialogHeader>
           <DialogTitle className="text-center text-xl flex items-center justify-center gap-2">
             <Image src="/calender.png" alt="Kalender" width={22} height={22} />
-            Daily Login
+          Absen Dulu
           </DialogTitle>
         </DialogHeader>
         <div className="text-center text-slate-600 -mt-1 mb-2">
@@ -170,6 +177,8 @@ export default function DailyLogin() {
                 }
                 try {
                   setLoading(true);
+                  // Play sound when starting claim process
+                  playMoney();
                   const res = await fetch('/api/daily-login', { method: 'POST' });
                   if (res.ok) {
                     const j = await res.json();
@@ -178,6 +187,10 @@ export default function DailyLogin() {
                       setReward(j.reward || null);
                       setTotal(j.totalLogins || j.total_logins || null);
                       setClaimedToday(true);
+                      // Play sound on successful claim
+                      if (j?.status === 'claimed') {
+                        playMoney();
+                      }
                     }
                   }
                 } finally {

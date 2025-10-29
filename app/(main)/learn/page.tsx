@@ -17,22 +17,7 @@ import { Quests } from "@/components/quests";
 
 const LearnPage = async () => {
 
-    const userProgressData = getUserProgress();
-    const courseProgressData = getCourseProgress();
-    const lessonPercentageData = getLessonPercentage();
-    const unitsData = getUnits();
-
-    const [
-        userProgress,
-        units,
-        courseProgress,
-        lessonPercentage
-    ] = await Promise.all([
-        userProgressData,
-        unitsData,
-        courseProgressData,
-        lessonPercentageData
-    ]);
+    const userProgress = await getUserProgress();
 
     // if no check we will need ? for typeof as well as where there is userProgress.active etc.
     if (!userProgress || !userProgress.activeCourse) {
@@ -40,9 +25,14 @@ const LearnPage = async () => {
         return <NeedCourse />;
     }
 
-    if (!courseProgress) {
-        return <NeedCourse />;
-    }
+    // Fetch units and courseProgress using known context to avoid duplicate DB calls
+    const [units, courseProgress, lessonPercentage] = await Promise.all([
+        getUnits({ userId: userProgress.userId as any, activeCourseId: userProgress.activeCourseId as any }),
+        getCourseProgress({ userId: userProgress.userId as any, activeCourseId: userProgress.activeCourseId as any }),
+        getLessonPercentage(),
+    ]);
+
+    if (!courseProgress) { return <NeedCourse />; }
 
     const isPro = false;
 

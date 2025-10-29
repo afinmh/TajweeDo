@@ -20,17 +20,18 @@ export const GET = async (req: Request) => {
   const userId = getUserIdFromCookie(req);
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const { data: user } = await supabaseAdmin
-    .from('users')
-    .select('id, username, profile_image_src')
-    .eq('id', userId)
-    .maybeSingle();
-
-  // Load all purchased items (any type) that are active and have an image
-  const { data: purchases } = await supabaseAdmin
-    .from('user_purchases')
-    .select('item_id')
-    .eq('user_id', userId);
+  // Fetch user and purchases in parallel
+  const [{ data: user }, { data: purchases }] = await Promise.all([
+    supabaseAdmin
+      .from('users')
+      .select('id, username, profile_image_src')
+      .eq('id', userId)
+      .maybeSingle(),
+    supabaseAdmin
+      .from('user_purchases')
+      .select('item_id')
+      .eq('user_id', userId),
+  ]);
   const ids = (purchases || []).map((p: any) => p.item_id);
   let owned: any[] = [];
   if (ids.length) {

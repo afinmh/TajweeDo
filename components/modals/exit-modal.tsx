@@ -41,10 +41,10 @@ export const ExitModal = () => {
                         />
                     </div>
                     <DialogTitle className="text-center font-bold text-lg sm:text-2xl">
-                        Wait, don&apos;t go!
+                        Eh, bentar dulu!
                     </DialogTitle>
                     <DialogDescription className="text-center text-xs sm:text-sm text-muted-foreground">
-                        You&apos;re about to leave the lesson. Are you sure?
+                        Serius ini mau di tinggalin?
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="mb-4">

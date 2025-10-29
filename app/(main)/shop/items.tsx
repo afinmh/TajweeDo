@@ -76,6 +76,14 @@ export const Items = ({
         toast.info("Langganan dinonaktifkan");
     };
 
+    const playMoney = () => {
+        try {
+            const a = new Audio('/audio/money.mp3');
+            // Fire-and-forget; ignore promise rejection (autoplay policies)
+            void a.play();
+        } catch {}
+    };
+
     const onPurchase = (itemId: number, price: number) => {
         if (pending) return;
         if (points < price) {
@@ -98,6 +106,8 @@ export const Items = ({
                     toast.info('Sudah dimiliki');
                 } else {
                     toast.success('Berhasil dibeli');
+                    // Play cash sound on successful purchase
+                    playMoney();
                 }
                 // optimistic: mark purchased; refresh page for points
                 setShopItems((prev) => prev.map(it => it.id === itemId ? { ...it, purchased: true } : it));

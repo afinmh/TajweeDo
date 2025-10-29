@@ -1,12 +1,15 @@
 "use client"
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function HeaderUser() {
     const [open, setOpen] = useState(false);
     const [user, setUser] = useState<{ id: string; username: string; profileImageSrc?: string } | null>(null);
     const ref = useRef<HTMLDivElement | null>(null);
+    const router = useRouter();
 
     useEffect(() => {
         async function load() {
@@ -50,13 +53,15 @@ export default function HeaderUser() {
 
             {open ? (
                 <div className="absolute right-0 mt-2 w-40 bg-white border rounded-md shadow-md z-20">
-                    <a
+                    <Link
                         href="/account"
+                        prefetch
+                        onMouseEnter={() => router.prefetch?.('/account')}
                         className="block px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                         onClick={() => setOpen(false)}
                     >
                         Akun Saya
-                    </a>
+                    </Link>
                     <button
                         className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                         onClick={async () => {

@@ -132,20 +132,15 @@ export const Quiz = ({
             const chosen = [...selectedIds].sort();
             const isAll = correctIds.length === chosen.length && correctIds.every((v, i) => v === chosen[i]);
             if (!isAll) return;
-            startTransition(async () => {
-                // If this was the last question, mark lesson complete server-side
-                const isLast = activeIndex >= challenges.length - 1;
-                correctControls.play();
-                setStatus("correct");
-                setPercentage((prev) => prev + 100 / challenges.length);
-                if (isLast) {
-                    try {
-                        await completeLesson(lessonId);
-                    } catch {
-                        // non-fatal
-                    }
-                }
-            });
+            // Immediate feedback: update UI now, side effects in background
+            const isLast = activeIndex >= challenges.length - 1;
+            setStatus("correct");
+            correctControls.play();
+            setPercentage((prev) => prev + 100 / challenges.length);
+            if (isLast) {
+                // fire and forget
+                void completeLesson(lessonId).catch(() => {});
+            }
             return;
         }
 
@@ -158,36 +153,32 @@ export const Quiz = ({
         }
 
         if (correctOption && correctOption.id === selectedOption) {
-            startTransition(async () => {
-                const isLast = activeIndex >= challenges.length - 1;
-                correctControls.play();
-                setStatus("correct");
-                setPercentage((prev) => prev + 100 / challenges.length);
-                if (isLast) {
-                    try { await completeLesson(lessonId); } catch {}
-                }
-                if (initialPercentage === 100) {
-                    setHearts((prev) => Math.min(prev + 1, 5));
-                }
-            })
+            // Immediate feedback
+            const isLast = activeIndex >= challenges.length - 1;
+            setStatus("correct");
+            correctControls.play();
+            setPercentage((prev) => prev + 100 / challenges.length);
+            if (isLast) {
+                void completeLesson(lessonId).catch(() => {});
+            }
+            if (initialPercentage === 100) {
+                setHearts((prev) => Math.min(prev + 1, 5));
+            }
         } else {
-            startTransition(() => {
-                reduceHearts(lessonId)
-                    .then((response) => {
-                        if (response?.error === "hearts") {
-                            openHeartsModal();
-                            return;
-                        };
-
-                        incorrectControls.play();
-                        setStatus("wrong");
-
-                        if (!response?.error) {
-                            setHearts((prev) => Math.max(prev - 1, 0));
-                        }
-                    })
-                    .catch(() => toast.error("Something went wrong. Please try again."))
-            })
+            // Immediate negative feedback; adjust hearts in background
+            setStatus("wrong");
+            incorrectControls.play();
+            reduceHearts(lessonId)
+                .then((response) => {
+                    if (response?.error === "hearts") {
+                        openHeartsModal();
+                        return;
+                    }
+                    if (!response?.error) {
+                        setHearts((prev) => Math.max(prev - 1, 0));
+                    }
+                })
+                .catch(() => toast.error("Something went wrong. Please try again."));
         }
     };
 
@@ -221,10 +212,14 @@ export const Quiz = ({
                         Great Job! <br />
                         You have completed the lesson.
                     </h1>
-                    <div className="flex items-center gap-x-4 w-full">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full">
                         <ResultCard
                             variant="points"
-                            value={challenges.length * 10}
+                            value={challenges.length * 25}
+                        />
+                        <ResultCard
+                            variant="xp"
+                            value={challenges.length * 100}
                         />
                         <ResultCard
                             variant="hearts"

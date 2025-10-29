@@ -41,15 +41,28 @@ export const completeLesson = async (lessonId: number) => {
 
   // Award points only the first time a lesson is completed
   if (!wasCompleted) {
+    // Determine number of challenges in this lesson
+    const { count } = await supabaseAdmin
+      .from("challenges")
+      .select("id", { count: "exact", head: true })
+      .eq("lesson_id", lessonId);
+
+    const challengeCount = typeof count === "number" ? count : 0;
+    const addPoints = challengeCount * 25; // 25 points per challenge
+    const addXp = challengeCount * 100;    // 100 XP per challenge
+
     const { data: up } = await supabaseAdmin
       .from("user_progress")
-      .select("points")
+      .select("points, xp")
       .eq("user_id", userId)
       .maybeSingle();
-    const points = (up?.points ?? 0) + 60;
+
+    const newPoints = (up?.points ?? 0) + addPoints;
+    const newXp = (up?.xp ?? 0) + addXp;
+
     await supabaseAdmin
       .from("user_progress")
-      .update({ points })
+      .update({ points: newPoints, xp: newXp })
       .eq("user_id", userId);
   }
 

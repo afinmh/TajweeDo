@@ -77,7 +77,7 @@ const LeaderboardPage = async () => {
                                 {userProgress.userName}
                             </p>
                             <p className="text-muted-foreground">
-                                {userProgress.points} XP
+                                {userProgress.xp} XP
                             </p>
                         </div>
                     ))}

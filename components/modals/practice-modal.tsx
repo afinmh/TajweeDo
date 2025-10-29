@@ -39,10 +39,10 @@ export const PracticeModal = () => {
                         />
                     </div>
                     <DialogTitle className="text-center font-bold text-lg sm:text-2xl">
-                        Practice Lesson
+                        Waktu Latihan
                     </DialogTitle>
                     <DialogDescription className="text-center text-sm sm:text-base">
-                        You cannot loose points or hearts in practice lesson.
+                        Anda tidak akan kehilangan poin atau hati dalam pelajaran latihan.
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="mb-4">

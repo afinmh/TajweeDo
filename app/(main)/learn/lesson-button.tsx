@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Check, Crown, Star } from "lucide-react";
 import { CircularProgressbarWithChildren } from "react-circular-progressbar";
 
@@ -26,6 +28,7 @@ export const LessonButton = ({
     current,
     percentage,
 }: Props) => {
+    const router = useRouter();
     const cycleLength = 8;
     const cycleIndex = index % cycleLength;
 
@@ -52,9 +55,19 @@ export const LessonButton = ({
     // Always navigate to the specific lesson page
     const href = `/lesson/${id}`;
 
+    useEffect(() => {
+        if (current) {
+            try { router.prefetch?.(href); } catch {}
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [current, href]);
+
     return (
         <Link
             href={href}
+            prefetch
+            onMouseEnter={() => router.prefetch?.(href)}
+            onTouchStart={() => router.prefetch?.(href)}
             aria-disabled={locked}
             style={{ pointerEvents: locked ? "none" : "auto" }}
         >
