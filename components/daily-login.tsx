@@ -186,7 +186,7 @@ export default function DailyLogin() {
               }}
               className="px-4"
             >
-              {claimedToday ? 'Tutup' : (loading ? 'Memproses…' : 'Claim')}
+              {claimedToday ? 'Tutup' : (loading ? 'Proses…' : 'Claim')}
             </Button>
           </div>
         </div>
