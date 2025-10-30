@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +18,12 @@ export default function Home() {
   const [showLogin, setShowLogin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const open = () => setShowLogin(true);
+    window.addEventListener("open-login", open as EventListener);
+    return () => window.removeEventListener("open-login", open as EventListener);
+  }, []);
 
   async function handleRegister(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

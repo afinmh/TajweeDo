@@ -11,7 +11,7 @@ export const Header = () => {
                         TajweeDo
                     </h1>
                 </div>
-                <AuthEntry variant="full" />
+                <AuthEntry variant="full" openMode="modal" />
             </div>
         </header>
     )

@@ -1,6 +1,7 @@
 // types moved off Drizzle; using structural types
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import fs from "fs";
+import path from "path";
 import { UnitBanner } from "./unit-banner";
 import { LessonButton } from "./lesson-button";
 
@@ -25,6 +26,33 @@ export const Unit = ({
     activeLesson,
     activeLessonPercentage,
 }: Props)=>{
+    // Helper to read images from public/<subdir>. Safe no-op on missing dir.
+    const getImagesFrom = (subdir: string): string[] => {
+        try {
+            const dir = path.join(process.cwd(), "public", subdir);
+            const files = fs
+                .readdirSync(dir)
+                .filter((f) => /\.(png|jpe?g|gif|webp|svg)$/i.test(f));
+            return files.map((f) => `/${subdir}/${f}`);
+        } catch {
+            return [];
+        }
+    };
+
+    // Rotate unique images across odd units (1,3,5,...) from public/ganjil
+    const ganjilImages = getImagesFrom("ganjil");
+    const oddIndex = Math.floor((order - 1) / 2); // 0 for unit 1, 1 for unit 3, etc.
+    const chosenOddImage = order % 2 === 1 && ganjilImages.length
+        ? ganjilImages[oddIndex % ganjilImages.length]
+        : undefined;
+
+    // Rotate unique images across even units (2,4,6,...) from public/genap
+    const genapImages = getImagesFrom("genap");
+    const evenIndex = Math.floor(order / 2) - 1; // 0 for unit 2, 1 for unit 4, etc.
+    const chosenEvenImage = order % 2 === 0 && genapImages.length
+        ? genapImages[evenIndex % genapImages.length]
+        : undefined;
+
     return(
         <>
             <UnitBanner title={title} description={description} lessonId={activeLesson?.id}/>
@@ -32,22 +60,10 @@ export const Unit = ({
                 {lessons.map((lesson,index)=>{
                     const isCurrent = lesson.id === activeLesson?.id; 
                     const isLocked = !lesson.completed && !isCurrent;
+                    const bend = (order % 2 === 0 ? "right" : "left") as "left" | "right";
 
                     return (
-                        <div key={lesson.id} className={cn("relative flex items-center", index === 2 && "translate-x-8")}>
-
-                            {/* tree image placed to the left of the 5th lesson (index 4) */}
-                            {index === 4 && (
-                                <div>
-                                    <Image
-                                        src="/tree.png"
-                                        alt="tree"
-                                        width={64}
-                                        height={64}
-                                        className="w-20 h-auto pointer-events-none select-none translate-y-3 -translate-x-12"
-                                    />
-                                </div>
-                            )}
+                        <div key={lesson.id} className="relative flex items-center z-10">
 
                             <LessonButton
                                 id={lesson.id}
@@ -56,23 +72,33 @@ export const Unit = ({
                                 current={isCurrent}
                                 locked={isLocked}
                                 percentage={activeLessonPercentage}
+                                bend={bend}
+                                anchorId="active-lesson"
                             />
-
-                            {/* park image placed next to the 3rd lesson (index 2) */}
-                            {index === 2 && (
-                                <div className="ml-0 -mt-4">
-                                    <Image
-                                        src="/park.png"
-                                        alt="park"
-                                        width={64}
-                                        height={64}
-                                        className="w-24 h-auto pointer-events-none select-none translate-y-3"
-                                    />
-                                </div>
-                            )}
                         </div>
                     )
                 })}
+                {/* Decorative image per unit parity (does not interfere with buttons) */}
+                {chosenOddImage && (
+                    <Image
+                        src={chosenOddImage}
+                        alt="ganjil decoration"
+                        width={100}
+                        height={100}
+                        className="absolute top-40 right-10 md:right-8 pointer-events-none select-none opacity-90"
+                        priority={false}
+                    />
+                )}
+                {chosenEvenImage && (
+                    <Image
+                        src={chosenEvenImage}
+                        alt="genap decoration"
+                        width={100}
+                        height={100}
+                        className="absolute top-40 right-40 md:right-8 pointer-events-none select-none opacity-90"
+                        priority={false}
+                    />
+                )}
             </div>
         </>
     );

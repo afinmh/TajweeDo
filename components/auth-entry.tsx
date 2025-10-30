@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import HeaderUser from "@/components/header-user";
 
 type Variant = "full" | "button" | "compact";
+type OpenMode = "route" | "modal";
 
-export default function AuthEntry({ variant = "full" }: { variant?: Variant }) {
+export default function AuthEntry({ variant = "full", openMode = "route" }: { variant?: Variant; openMode?: OpenMode }) {
   const [user, setUser] = useState<null | { id: string; username: string; profileImageSrc?: string }>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -55,23 +56,26 @@ export default function AuthEntry({ variant = "full" }: { variant?: Variant }) {
   }
 
   // Not logged in
+  const openLogin = () => {
+    if (openMode === "modal") {
+      try { window.dispatchEvent(new Event("open-login")); } catch {}
+      return;
+    }
+    // fallback route navigation
+    window.location.href = "/auth/login";
+  };
+
   if (variant === "button") {
     return (
-      <Link href="/auth/login">
-        <Button size="sm">Masuk / Daftar</Button>
-      </Link>
+      <Button size="sm" onClick={openLogin}>Masuk / Daftar</Button>
     );
   }
   if (variant === "compact") {
     return (
-      <Link href="/auth/login">
-        <Button size="sm">Masuk</Button>
-      </Link>
+      <Button size="sm" onClick={openLogin}>Masuk</Button>
     );
   }
   return (
-    <Link href="/auth/login">
-      <Button className="lg" variant="ghost">Login</Button>
-    </Link>
+    <Button className="lg" variant="ghost" onClick={openLogin}>Login</Button>
   );
 }

@@ -14,6 +14,7 @@ import { Unit } from "./unit";
 // types moved off Drizzle; using structural types
 import { Promo } from "@/components/promo";
 import { Quests } from "@/components/quests";
+import { AutoScroll } from "./auto-scroll";
 
 const LearnPage = async () => {
 
@@ -55,6 +56,8 @@ const LearnPage = async () => {
             </StickyWrapper>
             <FeedWrapper>
                 <Header title={userProgress.activeCourse.title} />
+                {/* Auto-scroll to the currently active lesson button when landing on Learn */}
+                <AutoScroll targetId="active-lesson" />
                 {units.map((unit) => (
                     <div key={unit.id} className="mb-10">
                         <Unit

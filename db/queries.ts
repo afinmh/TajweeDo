@@ -123,9 +123,9 @@ export const getCourseProgress = async (ctx?: Ctx) => {
     .select('id, order, lessons(id, order)')
   .eq('course_id', activeCourseId)
     .order('order', { ascending: true });
+  // Preserve unit order, then lesson order within each unit.
   const lessons = (units || [])
-    .flatMap((u: any) => (u.lessons || []))
-    .sort((a: any, b: any) => a.order - b.order);
+    .flatMap((u: any) => (u.lessons || []).sort((a: any, b: any) => a.order - b.order));
 
   // Determine which lessons are completed, prefer lesson_progress
   const lessonIds: number[] = lessons.map((l: any) => l.id);
@@ -212,7 +212,7 @@ export const getLesson = async (id?: number, ctx?: Partial<Ctx>) => {
   let challenges: any[] | null = null;
   let composedFromPool = false;
 
-  // Enforce curated 6-question mapping per path for Idzhar lessons (1..5) to avoid
+  // Enforce curated 6-question mapping per path for lessons to avoid
   // duplicating challenge rows while keeping deterministic order. If a lesson has its
   // own challenges and matches expected count, we still use this curated set to ensure
   // consistency as requested.
@@ -221,9 +221,37 @@ export const getLesson = async (id?: number, ctx?: Partial<Ctx>) => {
     2: [1001, 1002, 1005, 1006, 1007, 1008],
     3: [1001, 1002, 1007, 1008, 1009, 1010],
     4: [1001, 1008, 1009, 1010, 1011, 1012],
-    5: [1002, 1010, 1011, 1012, 1013, 1014],
+    5: [1002, 1011, 1012, 1013, 1014, 1015],
+    // Unit 2 (Idgham Bighunnah) lessons 6..10 mirror Unit 1 pattern with 110x ids
+    6: [1101, 1102, 1103, 1104, 1105, 1106],
+    7: [1101, 1102, 1105, 1106, 1107, 1108],
+    8: [1101, 1102, 1107, 1108, 1109, 1110],
+    9: [1101, 1108, 1109, 1110, 1111, 1112],
+    10: [1102, 1111, 1112, 1113, 1114, 1115],
+    // Unit 3 (Idgham Bilagunnah) lessons 16..19 use pool 1201..1212
+    11: [1201, 1202, 1203, 1204, 1205, 1206],
+    12: [1201, 1202, 1205, 1206, 1207, 1208],
+    13: [1201, 1202, 1207, 1208, 1209, 1210],
+    14: [1201, 1208, 1209, 1210, 1211, 1212],
+    // Unit 4 (Iqlab) lessons 20..23 use pool 1301..1312
+    15: [1301, 1302, 1303, 1304, 1305, 1306],
+    16: [1301, 1302, 1305, 1306, 1307, 1308],
+    17: [1301, 1302, 1307, 1308, 1309, 1310],
+    18: [1301, 1308, 1309, 1310, 1311, 1312],
+    // Unit 5 (Ikhfa) lessons 24..28 mirror Unit 1 with 140x ids
+    19: [1401, 1402, 1403, 1404, 1405, 1406],
+    20: [1401, 1402, 1405, 1406, 1407, 1408],
+    21: [1401, 1402, 1407, 1408, 1409, 1410],
+    22: [1401, 1408, 1409, 1410, 1411, 1412],
+    23: [1402, 1411, 1412, 1413, 1414, 1415],
   };
-  if ([1, 2, 3, 4, 5].includes(lesson.id)) {
+  if ([
+    1, 2, 3, 4, 5, // unit 1
+    6, 7, 8, 9, 10, // unit 2
+    11, 12, 13, 14, // unit 3
+    15, 16, 17, 18, // unit 4
+    19, 20, 21, 22, 23, // unit 5
+  ].includes(lesson.id)) {
     const ids = curatedMap[lesson.id] || [];
     const { data: base } = await supabaseAdmin
       .from('challenges')

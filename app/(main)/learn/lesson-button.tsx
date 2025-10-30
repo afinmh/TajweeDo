@@ -18,6 +18,11 @@ type Props = {
     locked?: boolean;
     current?: boolean;
     percentage: number;
+    // Control overall horizontal bend direction for the zigzag path.
+    // 'left' keeps the original behavior (default). 'right' mirrors the path.
+    bend?: "left" | "right";
+    // Optional DOM id to assign to the wrapper when this is the current/active lesson
+    anchorId?: string;
 };
 
 export const LessonButton = ({
@@ -27,24 +32,21 @@ export const LessonButton = ({
     locked,
     current,
     percentage,
+    bend = "left",
+    anchorId,
 }: Props) => {
     const router = useRouter();
     const cycleLength = 8;
     const cycleIndex = index % cycleLength;
+    // Fine-tuned indentation pattern so item at index 2 (the 3rd dot) is less far to the left
+    // Old pattern was [0,1,2,1,0,-1,-2,-1]
+    // New pattern tweaks the 3rd value from 2 -> 1.6
+    const indentPattern = [0, 1, 1.6, 1, 0, -1, -2, -1] as const;
+    const indentationLevel = indentPattern[cycleIndex];
 
-    let indentationLevel;
-
-    if (cycleIndex <= 2) {
-        indentationLevel = cycleIndex;
-    } else if (cycleIndex <= 4) {
-        indentationLevel = 4 - cycleIndex;
-    } else if (cycleIndex <= 6) {
-        indentationLevel = 4 - cycleIndex;
-    } else {
-        indentationLevel = cycleIndex - 8;
-    }
-
-    const rightPosition = indentationLevel * 40;
+    // Mirror horizontally when bend is set to 'right'
+    const directionMultiplier = bend === "left" ? 1 : -1;
+    const rightPosition = indentationLevel * 50 * directionMultiplier;
 
     const isFirst = index === 0;
     const isLast = index === totalCount;
@@ -73,6 +75,7 @@ export const LessonButton = ({
         >
             <div
                 className="relative"
+                id={current && anchorId ? anchorId : undefined}
                 style={{
                     right: `${rightPosition}px`,
                     marginTop: isFirst && !isCompleted ? 60 : 24,
