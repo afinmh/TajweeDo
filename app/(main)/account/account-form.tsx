@@ -59,8 +59,31 @@ export default function AccountForm() {
 
   return (
   <div className="max-w-2xl w-full bg-white border rounded-xl p-4 sm:p-6 space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-slate-800">Informasi Akun</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <Image src="/mascot.svg" alt="Mascot" width={28} height={28} className="w-7 h-7" /> Informasi Akun
+        </h2>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              const isStandalone = typeof window !== 'undefined' && (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone);
+              if (isStandalone) { alert('Aplikasi sudah terpasang.'); return; }
+              const w = window as any;
+              if (w.__deferredPWAInstallPrompt) {
+                w.__deferredPWAInstallPrompt.prompt();
+                const choice = await w.__deferredPWAInstallPrompt.userChoice;
+                if (choice?.outcome === 'accepted') { return; }
+              }
+              alert('Buka menu browser → Install App / Add to Home Screen untuk memasang.');
+            } catch {
+              alert('Gunakan menu browser → Install App.');
+            }
+          }}
+          className="text-xs sm:text-sm px-3 py-1.5 rounded-md border border-emerald-300 text-emerald-700 hover:bg-emerald-50 active:scale-[0.98] transition"
+        >
+          Install App
+        </button>
       </div>
 
       <div className="space-y-1">

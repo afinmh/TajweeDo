@@ -22,9 +22,9 @@ export const InstallAppModal: React.FC = () => {
     const onBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      if (navigator.onLine) {
-        setVisible(true);
-      }
+      // Expose globally so account install button can access it
+      (window as any).__deferredPWAInstallPrompt = e;
+      if (navigator.onLine) setVisible(true);
     };
 
     window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt as any);
@@ -83,13 +83,20 @@ export const InstallAppModal: React.FC = () => {
       <button aria-label="Tutup" onClick={handleClose} className="absolute top-2 right-2 text-emerald-600 hover:text-emerald-800">
         <X className="w-4 h-4" />
       </button>
-      <h3 className="font-bold text-emerald-700 mb-1">Install TajweeDo</h3>
+      <h3 className="font-bold text-emerald-700 mb-1 flex items-center gap-2">
+        <img src="/mascot.svg" alt="Mascot" className="w-5 h-5" />
+        Install TajweeDo
+      </h3>
       <p className="text-sm text-gray-600 mb-3 leading-snug">
         Pasang aplikasi agar akses lebih cepat & pengalaman fullscreen. Gratis dan ringan.
       </p>
       <div className="space-y-2">
-        <button onClick={handleInstall} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold py-2 rounded-md transition">
-          Install Sekarang
+        <button
+          onClick={handleInstall}
+          disabled={!deferredPrompt}
+          className={"w-full text-sm font-semibold py-2 rounded-md transition " + (deferredPrompt ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-gray-200 text-gray-500 cursor-not-allowed")}
+        >
+          {deferredPrompt ? 'Install Sekarang' : 'Install belum tersedia'}
         </button>
         <button onClick={handleClose} className="w-full text-xs text-emerald-700 hover:underline">
           Nanti saja
