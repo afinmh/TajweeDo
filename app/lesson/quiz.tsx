@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import Confetti from "react-confetti"
 import { reduceHearts } from "@/actions/user-progress";
 import { completeLesson } from "@/actions/lesson-progress";
@@ -47,7 +47,7 @@ export const Quiz = ({
     initialLessonChallenges,
     userSubscription,
 }: Props) => {
-    const { open: openHeartsModal } = useHeartsModal();
+    const { openBroken: openHeartsModal } = useHeartsModal();
     const { open: openPracticeModal } = usePracticeModal();
 
     useMount(() => {
@@ -181,6 +181,13 @@ export const Quiz = ({
                 .catch(() => toast.error("Something went wrong. Please try again."));
         }
     };
+
+    // Listen for hearts refilled event from HeartsModal purchase
+    useEffect(() => {
+        const handler = () => setHearts(5);
+        window.addEventListener('hearts-refilled', handler);
+        return () => window.removeEventListener('hearts-refilled', handler);
+    }, []);
 
     if (!challenge) {
         return (

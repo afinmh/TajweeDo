@@ -8,6 +8,7 @@ import { CircularProgressbarWithChildren } from "react-circular-progressbar";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useHeartsModal } from "@/store/use-hearts-modal";
 
 import "react-circular-progressbar/dist/styles.css";
 
@@ -36,6 +37,7 @@ export const LessonButton = ({
     anchorId,
 }: Props) => {
     const router = useRouter();
+    const { openBroken } = useHeartsModal();
     const cycleLength = 8;
     const cycleIndex = index % cycleLength;
     // Fine-tuned indentation pattern so item at index 2 (the 3rd dot) is less far to the left
@@ -72,6 +74,26 @@ export const LessonButton = ({
             onTouchStart={() => router.prefetch?.(href)}
             aria-disabled={locked}
             style={{ pointerEvents: locked ? "none" : "auto" }}
+            onClick={async (e) => {
+                if (locked) return;
+                // If lesson already completed (practice mode), skip hearts gating
+                const isCompleted = !current && !locked;
+                if (isCompleted) return; // allow normal navigation to practice
+                // Check hearts before navigating
+                try {
+                    const res = await fetch('/api/user-progress', { cache: 'no-store' });
+                    const data = await res.json().catch(() => ({}));
+                    const hearts = Number(data?.hearts ?? 0);
+                    if (Number.isFinite(hearts) && hearts <= 0) {
+                        e.preventDefault();
+                        openBroken();
+                        return;
+                    }
+                    // else allow default navigation
+                } catch {
+                    // if check fails, allow navigation rather than blocking
+                }
+            }}
         >
             <div
                 className="relative"

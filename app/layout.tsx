@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Nunito } from "next/font/google";
 // Clerk removed — using local auth
 import { Toaster } from "@/components/ui/sonner";
@@ -27,6 +28,16 @@ export default function RootLayout({
         <HeartsModal />
         <PracticeModal />
         {children}
+        {/* PWA manifest */}
+        <link rel="manifest" href="/manifest.json" />
+        {/* Register service worker on client */}
+        <Script id="sw-register" strategy="afterInteractive">{
+          `if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+              navigator.serviceWorker.register('/service-worker.js');
+            });
+          }`
+        }</Script>
       </body>
     </html>
   );

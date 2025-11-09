@@ -1,6 +1,7 @@
 import { MobileHeader } from "@/components/mobile-header";
 import { Sidebar } from "@/components/sidebar";
 import DailyLogin from "@/components/daily-login";
+import { InstallAppModal } from "@/components/modals/install-app-modal";
 
 type Props = {
     children: React.ReactNode;
@@ -19,6 +20,7 @@ const MainLayout = ({
                     {children}
                 </div>
             </main>
+            <InstallAppModal />
         </>
     );
 }
