@@ -14,19 +14,19 @@ const LeaderboardPage = async () => {
     const userProgressData = getUserProgress();
     const leaderboardData = getTopTenUsers();
 
-    const [
-        userProgress,
-        leaderboard,
-    ] = await Promise.all([
+    const [userProgress, leaderboard] = await Promise.all([
         userProgressData,
         leaderboardData,
     ]);
 
-    if (!userProgress || !userProgress.activeCourse) {
+    if (!userProgress) {
+        redirect('/');
+    }
+    if (!userProgress.activeCourse) {
         return <NeedCourse />;
-    };
+    }
 
-    const isPro = false
+    const isPro = false;
 
     return (
         <div className="flex flex-row-reverse gap-[48px] px-6">
@@ -37,12 +37,8 @@ const LeaderboardPage = async () => {
                     points={userProgress.points}
                     hasActiveSubscription={isPro}
                 />
-                {!isPro && (
-                    <Promo />
-                )}
-                
-                <Quests points={userProgress.points}/>
-
+                {!isPro && <Promo />}
+                <Quests points={userProgress.points} />
             </StickyWrapper>
             <FeedWrapper>
                 <div className="w-full flex flex-col items-center">
@@ -59,32 +55,23 @@ const LeaderboardPage = async () => {
                         Siapa yang ada di pucuk? Yuk lihat peringkatmu!
                     </p>
                     <Separator className="mb-4 h-0.5 rounded-full" />
-                    {leaderboard.map((userProgress, index) => (
+                    {leaderboard.map((u: any, index: number) => (
                         <div
-                            key={userProgress.userId}
+                            key={u.userId}
                             className="flex items-center w-full p-2 px-4 rounded-xl hover:bg-gray-200/50"
                         >
                             <p className="font-bold text-lime-700 mr-4 text-xl">{index + 1}</p>
-                            <Avatar
-                                className="h-14 w-14 ml-3 mr-6 bg-transparent border-0"
-                            >
-                                <AvatarImage
-                                    className="object-cover"
-                                    src={userProgress.userImageSrc}
-                                />
+                            <Avatar className="h-14 w-14 ml-3 mr-6 bg-transparent border-0">
+                                <AvatarImage className="object-cover" src={u.userImageSrc} />
                             </Avatar>
-                            <p className="font-bold text-neutral-800 flex-1">
-                                {userProgress.userName}
-                            </p>
-                            <p className="text-muted-foreground">
-                                {userProgress.xp} XP
-                            </p>
+                            <p className="font-bold text-neutral-800 flex-1">{u.userName}</p>
+                            <p className="text-muted-foreground">{u.xp} XP</p>
                         </div>
                     ))}
                 </div>
             </FeedWrapper>
         </div>
     );
-}
+};
 
 export default LeaderboardPage;

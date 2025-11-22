@@ -14,6 +14,7 @@ export default function AccountForm() {
   const [password, setPassword] = useState("");
   const [currentImage, setCurrentImage] = useState<string | undefined>(undefined);
   const [owned, setOwned] = useState<Avatar[]>([]);
+  // We only need a single button that opens the Install modal
 
   useEffect(() => {
     (async () => {
@@ -31,6 +32,8 @@ export default function AccountForm() {
       }
     })();
   }, []);
+
+  // No need to track install availability here; button opens modal which handles logic
 
   const onSave = () => {
     startTransition(() => {
@@ -63,27 +66,19 @@ export default function AccountForm() {
         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
           <Image src="/mascot.svg" alt="Mascot" width={28} height={28} className="w-7 h-7" /> Informasi Akun
         </h2>
-        <button
-          type="button"
-          onClick={async () => {
-            try {
+        <div>
+          <button
+            type="button"
+            onClick={() => {
               const isStandalone = typeof window !== 'undefined' && (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone);
               if (isStandalone) { alert('Aplikasi sudah terpasang.'); return; }
-              const w = window as any;
-              if (w.__deferredPWAInstallPrompt) {
-                w.__deferredPWAInstallPrompt.prompt();
-                const choice = await w.__deferredPWAInstallPrompt.userChoice;
-                if (choice?.outcome === 'accepted') { return; }
-              }
-              alert('Buka menu browser → Install App / Add to Home Screen untuk memasang.');
-            } catch {
-              alert('Gunakan menu browser → Install App.');
-            }
-          }}
-          className="text-xs sm:text-sm px-3 py-1.5 rounded-md border border-emerald-300 text-emerald-700 hover:bg-emerald-50 active:scale-[0.98] transition"
-        >
-          Install App
-        </button>
+              window.dispatchEvent(new Event('open-install-modal'));
+            }}
+            className="text-xs sm:text-sm px-3 py-1.5 rounded-md border border-emerald-300 text-emerald-700 hover:bg-emerald-50 active:scale-[0.98] transition"
+          >
+            Install App
+          </button>
+        </div>
       </div>
 
       <div className="space-y-1">

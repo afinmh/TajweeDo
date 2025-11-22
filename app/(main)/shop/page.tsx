@@ -18,9 +18,12 @@ const ShopPage = async () => {
         userProgressData,
     ]);
 
-    if(!userProgress || !userProgress.activeCourse){
+    if(!userProgress){
+        redirect('/');
+    }
+    if(!userProgress.activeCourse){
         return <NeedCourse />;
-    };
+    }
 
     const isPro = false
 

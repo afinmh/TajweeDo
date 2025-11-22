@@ -14,7 +14,7 @@ export default function HeaderUser() {
     useEffect(() => {
         async function load() {
             try {
-                const res = await fetch('/api/auth/me');
+                const res = await fetch('/api/auth/me', { cache: 'no-store' });
                 if (!res.ok) return;
                 const data = await res.json();
                 setUser(data);
@@ -66,9 +66,14 @@ export default function HeaderUser() {
                         className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                         onClick={async () => {
                             setOpen(false);
-                            await fetch('/api/auth/logout', { method: 'POST' });
-                            // reload to clear UI
-                            window.location.href = '/';
+                            try {
+                                await fetch('/api/auth/logout', { method: 'POST', cache: 'no-store' });
+                            } catch {}
+                            // Tell SW-controlled clients to clear auth cache and reload
+                            try {
+                                navigator.serviceWorker?.controller?.postMessage({ type: 'LOGOUT' });
+                            } catch {}
+                            window.location.replace('/');
                         }}
                     >
                         Keluar
