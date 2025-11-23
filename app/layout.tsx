@@ -39,7 +39,9 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="icon" href="/mascot.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/mascot.svg" />
+        {/* iOS Home Screen icon (PNG, not SVG) */}
+        <link rel="apple-touch-icon" sizes="180x180" href="/cover.png" />
+        <meta name="apple-mobile-web-app-title" content="TajweeDo" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="mobile-web-app-capable" content="yes" />
