@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Check, Crown, Star } from "lucide-react";
 import { CircularProgressbarWithChildren } from "react-circular-progressbar";
 
@@ -66,6 +66,7 @@ export const LessonButton = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [current, href]);
 
+    const [pending, setPending] = useState(false);
     return (
         <Link
             href={href}
@@ -76,22 +77,31 @@ export const LessonButton = ({
             style={{ pointerEvents: locked ? "none" : "auto" }}
             onClick={async (e) => {
                 if (locked) return;
-                // If lesson already completed (practice mode), skip hearts gating
-                const isCompleted = !current && !locked;
-                if (isCompleted) return; // allow normal navigation to practice
-                // Check hearts before navigating
+                const isCompletedLocal = !current && !locked;
+                // If completed allow immediate navigation (practice mode)
+                if (isCompletedLocal) {
+                    window.dispatchEvent(new Event('route-loading-start'));
+                    setPending(true);
+                    return;
+                }
                 try {
+                    setPending(true);
                     const res = await fetch('/api/user-progress', { cache: 'no-store' });
                     const data = await res.json().catch(() => ({}));
                     const hearts = Number(data?.hearts ?? 0);
                     if (Number.isFinite(hearts) && hearts <= 0) {
                         e.preventDefault();
+                        setPending(false);
                         openBroken();
                         return;
                     }
-                    // else allow default navigation
+                    // Hearts ok, dispatch global route loader
+                    window.dispatchEvent(new Event('route-loading-start'));
                 } catch {
-                    // if check fails, allow navigation rather than blocking
+                    // If check fails still navigate but show loader
+                    window.dispatchEvent(new Event('route-loading-start'));
+                } finally {
+                    // Let navigation proceed; spinner remains until route change
                 }
             }}
         >
@@ -127,34 +137,42 @@ export const LessonButton = ({
                                 variant={locked ? "locked" : "secondary"}
                                 className="h-[70px] w-[70px] border-b-8"
                             >
-                                <Icon 
-                                    className={cn(
-                                        'h-10 w-10',
-                                        locked 
-                                        ? "fill-neutral-400 text-neutral-400 stroke-neutral-400"
-                                        : "fill-primary-foreground text-primary-foreground",
-                                        isCompleted && "fill-none stroke-[4]"
-                                    )}
-                                />
+                                {pending ? (
+                                    <div className="h-10 w-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <Icon 
+                                        className={cn(
+                                            'h-10 w-10',
+                                            locked 
+                                            ? "fill-neutral-400 text-neutral-400 stroke-neutral-400"
+                                            : "fill-primary-foreground text-primary-foreground",
+                                            isCompleted && "fill-none stroke-[4]"
+                                        )}
+                                    />
+                                )}
                             </Button>
                         </CircularProgressbarWithChildren>
                     </div>
                 ) : (
                     <Button
-                                size="rounded"
-                                variant={locked ? "locked" : "secondary"}
-                                className="h-[70px] w-[70px] border-b-8"
-                            >
-                                <Icon 
-                                    className={cn(
-                                        'h-10 w-10',
-                                        locked 
-                                        ? "fill-neutral-400 text-neutral-400 stroke-neutral-400"
-                                        : "fill-primary-foreground text-primary-foreground",
-                                        isCompleted && "fill-none stroke-[4]"
-                                    )}
-                                />
-                            </Button>
+                        size="rounded"
+                        variant={locked ? "locked" : "secondary"}
+                        className="h-[70px] w-[70px] border-b-8"
+                    >
+                        {pending ? (
+                            <div className="h-10 w-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            <Icon 
+                                className={cn(
+                                    'h-10 w-10',
+                                    locked 
+                                    ? "fill-neutral-400 text-neutral-400 stroke-neutral-400"
+                                    : "fill-primary-foreground text-primary-foreground",
+                                    isCompleted && "fill-none stroke-[4]"
+                                )}
+                            />
+                        )}
+                    </Button>
                 )}
             </div>
         </Link>

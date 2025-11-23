@@ -39,19 +39,15 @@ export const Unit = ({
         }
     };
 
-    // Rotate unique images across odd units (1,3,5,...) from public/ganjil
-    const ganjilImages = getImagesFrom("ganjil");
-    const oddIndex = Math.floor((order - 1) / 2); // 0 for unit 1, 1 for unit 3, etc.
-    const chosenOddImage = order % 2 === 1 && ganjilImages.length
-        ? ganjilImages[oddIndex % ganjilImages.length]
+    // Single image pool from public/learn
+    const learnImages = getImagesFrom("learn");
+    const chosenImage = learnImages.length
+        ? learnImages[(order - 1) % learnImages.length]
         : undefined;
-
-    // Rotate unique images across even units (2,4,6,...) from public/genap
-    const genapImages = getImagesFrom("genap");
-    const evenIndex = Math.floor(order / 2) - 1; // 0 for unit 2, 1 for unit 4, etc.
-    const chosenEvenImage = order % 2 === 0 && genapImages.length
-        ? genapImages[evenIndex % genapImages.length]
-        : undefined;
+    // Position class: odd (ganjil) -> right, even (genap) -> left
+    const positionClass = order % 2 === 1
+        ? "right-10 md:right-8"
+        : "left-10 md:left-8";
 
     return(
         <>
@@ -78,24 +74,14 @@ export const Unit = ({
                         </div>
                     )
                 })}
-                {/* Decorative image per unit parity (does not interfere with buttons) */}
-                {chosenOddImage && (
+                {/* Decorative image from learn folder; parity controls side */}
+                {chosenImage && (
                     <Image
-                        src={chosenOddImage}
-                        alt="ganjil decoration"
+                        src={chosenImage}
+                        alt="unit decoration"
                         width={100}
                         height={100}
-                        className="absolute top-40 right-10 md:right-8 pointer-events-none select-none opacity-90"
-                        priority={false}
-                    />
-                )}
-                {chosenEvenImage && (
-                    <Image
-                        src={chosenEvenImage}
-                        alt="genap decoration"
-                        width={100}
-                        height={100}
-                        className="absolute top-40 right-40 md:right-8 pointer-events-none select-none opacity-90"
+                        className={`absolute top-40 ${positionClass} pointer-events-none select-none opacity-90`}
                         priority={false}
                     />
                 )}

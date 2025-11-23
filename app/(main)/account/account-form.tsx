@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 type Avatar = { id: number; name: string; image_src: string };
 
@@ -145,7 +146,10 @@ export default function AccountForm() {
         >
           Keluar
         </Button>
-        <Button disabled={saving} onClick={onSave}>Simpan</Button>
+        <Button disabled={saving} onClick={onSave} className="flex items-center gap-2">
+          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+          <span>Simpan</span>
+        </Button>
       </div>
     </div>
   );

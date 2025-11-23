@@ -9,6 +9,10 @@ export const metadata = {
   title: 'Akun Saya',
 };
 
+// Force dynamic rendering so username/session is always fresh after login/register
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function AccountPage() {
   const userProgress = await getUserProgress();
   if (!userProgress || !userProgress.activeCourse) {

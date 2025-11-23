@@ -179,30 +179,19 @@ export const InstallAppModal: React.FC = () => {
       ) : showManualInstructions ? (
         <div className="space-y-3 mb-3">
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <p className="text-xs font-semibold text-amber-800 mb-1">ℹ️ Browser tidak mendukung install otomatis</p>
+            <p className="text-xs font-semibold text-amber-800 mb-1">Browser tidak mendukung install otomatis</p>
             <p className="text-xs text-amber-700 mb-2">Ini normal untuk beberapa browser. Gunakan cara manual:</p>
           </div>
           <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-            <p className="text-xs font-semibold text-emerald-800 mb-1.5">📱 Cara Install:</p>
+            <p className="text-xs font-semibold text-emerald-800 mb-1.5">Cara Install:</p>
             <p className="text-xs text-emerald-700 leading-relaxed">
               {getBrowserInstructions()}
             </p>
           </div>
-          <button
-            onClick={() => {
-              if (typeof window !== 'undefined' && (window as any).checkPWAInstallable) {
-                (window as any).checkPWAInstallable();
-              }
-            }}
-            className="w-full text-xs text-gray-600 hover:text-emerald-700 py-1 border border-dashed border-gray-300 rounded hover:border-emerald-500 transition"
-          >
-            🔍 Debug: Cek Status PWA di Console
-          </button>
         </div>
       ) : deferredPrompt ? (
         <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-xs text-green-700 flex items-center gap-1">
-            <span className="text-base">✅</span>
             <span className="font-medium">Siap diinstall! Klik tombol di bawah.</span>
           </p>
         </div>
@@ -214,7 +203,7 @@ export const InstallAppModal: React.FC = () => {
             onClick={handleInstall}
             className="w-full text-sm font-semibold py-2.5 rounded-md transition bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95"
           >
-            ⬇️ Install Sekarang
+            Install Sekarang
           </button>
         )}
         {showManualInstructions && (

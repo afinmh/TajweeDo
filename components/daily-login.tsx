@@ -187,7 +187,25 @@ export default function DailyLogin() {
                       setClaimedToday(true);
                       // Play sound only when a new claim succeeds (checkmark applied)
                       if (j?.status === 'claimed') {
-                        playMoney();
+                        const itemId = j?.reward?.item_id;
+                        // If there is a special item reward, wait until audio finishes before showing reward modal
+                        if (itemId) {
+                          try {
+                            const a = new Audio('/audio/money.mp3');
+                            a.play().catch(() => {});
+                            a.addEventListener('ended', () => {
+                              setOpen(false);
+                              window.dispatchEvent(new CustomEvent('open-reward-modal', { detail: { itemId, day: j.day, total: j.totalLogins || j.total_logins } }));
+                            });
+                          } catch {
+                            // fallback immediate
+                            setOpen(false);
+                            window.dispatchEvent(new CustomEvent('open-reward-modal', { detail: { itemId, day: j.day, total: j.totalLogins || j.total_logins } }));
+                          }
+                        } else {
+                          // No item reward, keep existing behavior (just play sound)
+                          playMoney();
+                        }
                       }
                     }
                   }

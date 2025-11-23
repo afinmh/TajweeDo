@@ -304,6 +304,7 @@ export const Quiz = ({
                 disabled={pending || !canCheck}
                 status={status}
                 onCheck={onContinue}
+                instruction={status === "none" ? (challenge.type === "SELECT_ALL" ? "Pilih Semua" : "Pilih 1 jawaban") : undefined}
             />
         </>
     );

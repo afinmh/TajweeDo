@@ -1,24 +1,24 @@
 {
-  "name": "TajweeDo - Belajar Tajwid Interaktif",
+  "name": "TajweeDo",
   "short_name": "TajweeDo",
-  "description": "Belajar tajwid interaktif dengan sistem level, nyawa, dan XP.",
+  "description": "Ayo belajar tajwid!",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
   "background_color": "#10b981",
-  "theme_color": "#10b981",
+  "theme_color": "#ffffff",
   "orientation": "portrait-primary",
   "lang": "id-ID",
   "categories": ["education", "games"],
   "icons": [
     {
-      "src": "/mascot.svg",
+      "src": "/cover.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/mascot.svg",
+      "src": "/cover.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "maskable"

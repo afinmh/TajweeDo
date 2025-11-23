@@ -7,6 +7,8 @@ import "./globals.css";
 import { ExitModal } from "@/components/modals/exit-modal";
 import { HeartsModal } from "@/components/modals/hearts-modal";
 import { PracticeModal } from "@/components/modals/practice-modal";
+import { RewardModal } from "@/components/modals/reward-modal";
+import { RouteLoader } from "@/components/route-loader";
 
 const font = Nunito({ subsets: ["latin"] });
 
@@ -47,6 +49,8 @@ export default function RootLayout({
         <ExitModal />
         <HeartsModal />
         <PracticeModal />
+        <RewardModal />
+        <RouteLoader />
         {children}
         {/* Register service worker on client */}
         <Script id="sw-register" strategy="afterInteractive">{

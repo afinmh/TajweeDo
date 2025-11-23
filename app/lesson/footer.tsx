@@ -9,13 +9,15 @@ type Props = {
     status: "correct" | "wrong" | "none" | "completed";
     disabled?: boolean;
     lessonId?: number;
+    instruction?: string; // e.g. Pilih Semua / Pilih 1 jawaban
 };
 
 export const Footer = ({
     onCheck,
     status,
     disabled,
-    lessonId
+    lessonId,
+    instruction,
 }: Props) => {
     useKey("Enter", onCheck, {}, [onCheck]);
     const isMobile = useMedia("(max-width: 1024px)");
@@ -27,6 +29,11 @@ export const Footer = ({
             status === "wrong" && "border-transparent bg-rose-100",
         )}>
             <div className="max-w-[1140px] h-full mx-auto flex items-center justify-center px-6 lg:px-10">
+                {status === "none" && instruction && (
+                    <div className="text-emerald-600 font-semibold text-base lg:text-2xl flex items-center">
+                        {instruction}
+                    </div>
+                )}
                 {status === "correct" && (
                     <div className="text-green-500 font-bold text-base lg:text-2xl flex items-center">
                         <CheckCircle className="h-6 w-6 lg:h-10 lg:w-10 mr-4" />
