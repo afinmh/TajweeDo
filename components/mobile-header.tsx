@@ -1,13 +1,15 @@
+"use client";
+
 import Link from "next/link"
 import Image from "next/image"
 import { InfinityIcon } from "lucide-react"
-import { getUserProgress } from "@/db/queries"
 
-export const MobileHeader = async () => {
-    const userProgress = await getUserProgress();
+type Props = {
+    points?: number;
+    hearts?: number;
+};
 
-    const points = userProgress?.points ?? 0;
-    const hearts = userProgress?.hearts ?? 0;
+export const MobileHeader = ({ points = 0, hearts = 0 }: Props) => {
     const isPro = false;
 
     return (

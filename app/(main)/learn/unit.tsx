@@ -1,9 +1,10 @@
+"use client";
 // types moved off Drizzle; using structural types
 import Image from "next/image";
-import fs from "fs";
-import path from "path";
 import { UnitBanner } from "./unit-banner";
 import { LessonButton } from "./lesson-button";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 type Props = {
     id: number;
@@ -15,6 +16,7 @@ type Props = {
     })[];
     activeLesson: any | undefined;
     activeLessonPercentage: number;
+    learnImages: string[];
 };
 
 export const Unit = ({
@@ -25,22 +27,25 @@ export const Unit = ({
     lessons,
     activeLesson,
     activeLessonPercentage,
+    learnImages,
 }: Props)=>{
-    // Helper to read images from public/<subdir>. Safe no-op on missing dir.
-    const getImagesFrom = (subdir: string): string[] => {
-        try {
-            const dir = path.join(process.cwd(), "public", subdir);
-            const files = fs
-                .readdirSync(dir)
-                .filter((f) => /\.(png|jpe?g|gif|webp|svg)$/i.test(f));
-            return files.map((f) => `/${subdir}/${f}`);
-        } catch {
-            return [];
-        }
-    };
+    const router = useRouter();
 
-    // Single image pool from public/learn
-    const learnImages = getImagesFrom("learn");
+    // Prefetch next lesson routes for instant navigation
+    useEffect(() => {
+        if (activeLesson) {
+            const currentIndex = lessons.findIndex(l => l.id === activeLesson.id);
+            // Prefetch current and next 2 lessons
+            const toPrefetch = lessons.slice(currentIndex, currentIndex + 3);
+            toPrefetch.forEach(lesson => {
+                try {
+                    router.prefetch(`/lesson/${lesson.id}`);
+                } catch {}
+            });
+        }
+    }, [activeLesson, lessons, router]);
+
+    // Choose image from pre-loaded array
     const chosenImage = learnImages.length
         ? learnImages[(order - 1) % learnImages.length]
         : undefined;

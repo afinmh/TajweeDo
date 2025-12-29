@@ -22,8 +22,6 @@ const QuestsPage = async () => {
         return <NeedCourse />;
     };
 
-    const isPro = false
-
     return (
         <div className="flex flex-row-reverse gap-[48px] px-6">
             <StickyWrapper>
@@ -31,21 +29,20 @@ const QuestsPage = async () => {
                     activeCourse={userProgress.activeCourse}
                     hearts={userProgress.hearts}
                     points={userProgress.points}
-                    hasActiveSubscription={isPro}
+                    hasActiveSubscription={false}
                 />
-                {/* Promo dihilangkan untuk tampilan menu sederhana */}
             </StickyWrapper>
             <FeedWrapper>
                 <div className="w-full flex flex-col items-center">
                     <Image
-                        src="/quests.svg"
+                        src="/puzzle.png"
                         alt="Quests"
                         height={90}
                         width={90}
                     />
-                    <h1 className="text-center font-bold text-neutral-800 text-2xl my-6">Tantangan</h1>
+                    <h1 className="text-center font-bold text-neutral-800 text-2xl my-6">Doa Harian</h1>
                     <p className="text-muted-foreground text-center text-lg mb-6">
-                        Butuh poin tambahan? Kerjain ini aja!
+                        Ayo Hafalkan Semua Doanya!
                     </p>
                     <QuestsMenu />
                 </div>

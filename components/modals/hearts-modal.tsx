@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-
 import {
     Dialog,
     DialogContent,
@@ -12,39 +11,22 @@ import {
     DialogHeader,
     DialogTitle
 } from "@/components/ui/dialog";
-
 import { Button } from "@/components/ui/button";
 import { POINTS_TO_REFILL } from "@/constants";
 import { refillHearts } from "@/actions/user-progress";
 import { useHeartsModal } from "@/store/use-hearts-modal";
+import { useUserProgress } from "@/hooks";
 
 export const HeartsModal = () => {
     const router = useRouter();
     const [isClient, setIsClient] = useState(false);
     const { isOpen, close, broken } = useHeartsModal();
     const [pending, startTransition] = useTransition();
-    const [hearts, setHearts] = useState<number>(0);
-    const [points, setPoints] = useState<number>(0);
-    const [loading, setLoading] = useState(true);
+    
+    // ✅ Use custom hook for cleaner state management
+    const { hearts, points, isLoading, refillHearts: refillHeartsHook } = useUserProgress();
 
     useEffect(() => setIsClient(true), []);
-
-    // Load user progress (hearts & points) when modal opens
-    useEffect(() => {
-        if (!isOpen) return;
-        (async () => {
-            try {
-                const res = await fetch('/api/user-progress', { cache: 'no-store' });
-                const data = await res.json().catch(() => ({}));
-                setHearts(data.hearts ?? 0);
-                setPoints(data.points ?? 0);
-            } catch {
-                // ignore
-            } finally {
-                setLoading(false);
-            }
-        })();
-    }, [isOpen]);
 
     const playMoney = async () => {
         try {
@@ -59,22 +41,23 @@ export const HeartsModal = () => {
     };
 
     const onBuyFullHearts = () => {
-        if (pending) return;
-        if (hearts === 5) return;
-        if (points < POINTS_TO_REFILL) return;
+        if (pending || isLoading || hearts === 5 || points < POINTS_TO_REFILL) return;
+        
         startTransition(() => {
             (async () => {
                 try {
-                    await refillHearts();
-                    // Update local hearts immediately
-                    setHearts(5);
-                    // Notify lesson quiz to update hearts
-                    window.dispatchEvent(new CustomEvent('hearts-refilled'));
-                    // Play cash sound before closing
-                    await playMoney();
-                    close(); // Stay on lesson (do not redirect)
-                } catch {
-                    // swallow
+                    // ✅ Use custom hook for refill
+                    const result = await refillHeartsHook();
+                    
+                    if (result.success) {
+                        // Notify lesson quiz to update hearts
+                        window.dispatchEvent(new CustomEvent('hearts-refilled'));
+                        // Play cash sound before closing
+                        await playMoney();
+                        close();
+                    }
+                } catch (error) {
+                    console.error('Failed to refill hearts:', error);
                 }
             })();
         });
@@ -120,10 +103,10 @@ export const HeartsModal = () => {
                         <Button
                             variant="primary"
                             className="w-full text-sm sm:text-base py-2 sm:py-3"
-                            disabled={pending || loading || hearts === 5 || points < POINTS_TO_REFILL}
+                            disabled={pending || isLoading || hearts === 5 || points < POINTS_TO_REFILL}
                             onClick={onBuyFullHearts}
                         >
-                            {loading ? 'Memuat...' : hearts === 5 ? 'Nyawa Penuh' : points < POINTS_TO_REFILL ? 'Poin Kurang' : (
+                            {isLoading ? 'Memuat...' : hearts === 5 ? 'Nyawa Penuh' : points < POINTS_TO_REFILL ? 'Poin Kurang' : (
                                 <span className="flex items-center gap-2 justify-center">
                                     <Image src="/heart.svg" alt="heart" width={28} height={28} />
                                     <Image src="/points.svg" alt="points" width={20} height={20} />

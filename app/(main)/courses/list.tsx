@@ -1,14 +1,14 @@
 "use client";
 import { Card } from "./card";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useTransition, useEffect } from "react";
 import { upsertUserProgress } from "@/actions/user-progress";
 import { toast } from "sonner";
 
 type CourseItem = {
     id: number;
     title: string;
-    imageSrc: string;
+    image_src: string;
 };
 
 type Props = {
@@ -19,6 +19,11 @@ type Props = {
 export const List = ({ courses, activeCourseId }: Props) => {
     const router = useRouter();
     const [pending, startTransition] = useTransition();
+
+    // Prefetch /learn route on component mount for instant navigation
+    useEffect(() => {
+        router.prefetch("/learn");
+    }, [router]);
 
     const onClick = (id:number)=>{
         if (pending) return;
@@ -40,7 +45,7 @@ export const List = ({ courses, activeCourseId }: Props) => {
                     key={course.id}
                     id={course.id}
                     title={course.title}
-                    imageSrc={course.imageSrc}
+                    imageSrc={course.image_src}
                     onClick={onClick}
                     disabled={pending}
                     active={course.id === activeCourseId}

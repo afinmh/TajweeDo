@@ -1,22 +1,19 @@
 import { FeedWrapper } from "@/components/feed-wrapper";
-import { Promo } from "@/components/promo";
 import { Quests } from "@/components/quests";
 import { StickyWrapper } from "@/components/sticky-wrapper";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { UserProgress } from "@/components/user-progress";
-import { getTopTenUsers, getUserProgress } from "@/db/queries";
+import { userProgressService } from "@/lib/services";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import NeedCourse from "@/components/need-course";
 
 const LeaderboardPage = async () => {
-    const userProgressData = getUserProgress();
-    const leaderboardData = getTopTenUsers();
-
+    // ✅ Use service layer for parallel data fetching
     const [userProgress, leaderboard] = await Promise.all([
-        userProgressData,
-        leaderboardData,
+        userProgressService.getCurrentUserProgress(),
+        userProgressService.getLeaderboard(10),
     ]);
 
     if (!userProgress) {
@@ -26,8 +23,6 @@ const LeaderboardPage = async () => {
         return <NeedCourse />;
     }
 
-    const isPro = false;
-
     return (
         <div className="flex flex-row-reverse gap-[48px] px-6">
             <StickyWrapper>
@@ -35,9 +30,8 @@ const LeaderboardPage = async () => {
                     activeCourse={userProgress.activeCourse}
                     hearts={userProgress.hearts}
                     points={userProgress.points}
-                    hasActiveSubscription={isPro}
+                    hasActiveSubscription={false}
                 />
-                {!isPro && <Promo />}
                 <Quests points={userProgress.points} />
             </StickyWrapper>
             <FeedWrapper>

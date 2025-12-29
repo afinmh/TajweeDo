@@ -2,40 +2,49 @@ import { FeedWrapper } from "@/components/feed-wrapper";
 import { StickyWrapper } from "@/components/sticky-wrapper";
 import { Header } from "./header";
 import { UserProgress } from "@/components/user-progress";
-import {
-    getCourseProgress,
-    getLessonPercentage,
-    getUnits,
-    getUserProgress
-} from "@/db/queries";
+import { userProgressService, courseService } from "@/lib/services";
 import { redirect } from "next/navigation";
 import NeedCourse from "@/components/need-course";
 import { Unit } from "./unit";
-// types moved off Drizzle; using structural types
-import { Promo } from "@/components/promo";
 import { Quests } from "@/components/quests";
 import { AutoScroll } from "./auto-scroll";
+import fs from "fs";
+import path from "path";
+
+// Helper to read images from public/<subdir>. Safe no-op on missing dir.
+const getImagesFrom = (subdir: string): string[] => {
+    try {
+        const dir = path.join(process.cwd(), "public", subdir);
+        const files = fs
+            .readdirSync(dir)
+            .filter((f) => /\.(png|jpe?g|gif|webp|svg)$/i.test(f));
+        return files.map((f) => `/${subdir}/${f}`);
+    } catch {
+        return [];
+    }
+};
 
 const LearnPage = async () => {
+    // ✅ Use service layer for cleaner code
+    const userProgress = await userProgressService.getCurrentUserProgress();
 
-    const userProgress = await getUserProgress();
-
-    // if no check we will need ? for typeof as well as where there is userProgress.active etc.
     if (!userProgress || !userProgress.activeCourse) {
-        // show a friendly warning instead of a hard redirect
         return <NeedCourse />;
     }
 
-    // Fetch units and courseProgress using known context to avoid duplicate DB calls
+    // ✅ Parallel data fetching with services for optimal performance
     const [units, courseProgress, lessonPercentage] = await Promise.all([
-        getUnits({ userId: userProgress.userId as any, activeCourseId: userProgress.activeCourseId as any }),
-        getCourseProgress({ userId: userProgress.userId as any, activeCourseId: userProgress.activeCourseId as any }),
-        getLessonPercentage(),
+        courseService.getUnitsWithProgress(userProgress.activeCourseId!, userProgress.userId),
+        courseService.getCourseProgress(userProgress.activeCourseId!, userProgress.userId),
+        courseService.getLessonPercentage(),
     ]);
 
-    if (!courseProgress) { return <NeedCourse />; }
+    if (!courseProgress) { 
+        return <NeedCourse />; 
+    }
 
-    const isPro = false;
+    // Pre-load images once in server component
+    const learnImages = getImagesFrom("learn");
 
     return (
         <div className="flex flex-row-reverse gap-[48px] px-6">
@@ -44,12 +53,8 @@ const LearnPage = async () => {
                     activeCourse={userProgress.activeCourse}
                     hearts={userProgress.hearts}
                     points={userProgress.points}
-                    hasActiveSubscription={isPro}
+                    hasActiveSubscription={false}
                 />
-                
-                {!isPro && (
-                    <Promo />
-                )}
 
                 <Quests points={userProgress.points}/>
 
@@ -68,6 +73,7 @@ const LearnPage = async () => {
                             lessons={unit.lessons}
                             activeLesson={courseProgress?.activeLesson as any}
                             activeLessonPercentage={lessonPercentage}
+                            learnImages={learnImages}
                         />
                     </div>
                 ))}

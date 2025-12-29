@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-
 import { isAdmin } from "@/lib/admin";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -8,23 +7,27 @@ export const GET = async () => {
         return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { data, error } = await supabaseAdmin
-        .from('units')
-        .select('*');
+    try {
+        // ✅ Optimized with sorting for better UX
+        const { data, error } = await supabaseAdmin
+            .from('units')
+            .select('*')
+            .order('order', { ascending: true });
 
-    if (error) {
-        return new NextResponse(error.message, { status: 500 });
+        if (error) throw error;
+
+        const mapped = (data || []).map((u: any) => ({
+            id: u.id,
+            title: u.title,
+            description: u.description,
+            courseId: u.course_id,
+            order: u.order,
+        }));
+
+        return NextResponse.json(mapped);
+    } catch (error: any) {
+        return new NextResponse(error.message || "Internal error", { status: 500 });
     }
-
-    const mapped = (data || []).map((u: any) => ({
-        id: u.id,
-        title: u.title,
-        description: u.description,
-        courseId: u.course_id,
-        order: u.order,
-    }));
-
-    return NextResponse.json(mapped);
 };
 
 export const POST = async (req: Request) => {
@@ -32,31 +35,39 @@ export const POST = async (req: Request) => {
         return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const body = await req.json();
-    const payload = {
-        title: body.title,
-        description: body.description,
-        course_id: body.courseId,
-        order: body.order,
-    };
+    try {
+        const body = await req.json();
+        
+        // ✅ Validate input
+        if (!body.title || !body.courseId || body.order === undefined) {
+            return new NextResponse("Missing required fields", { status: 400 });
+        }
 
-    const { data, error } = await supabaseAdmin
-        .from('units')
-        .insert(payload)
-        .select('*')
-        .single();
+        const payload = {
+            title: body.title,
+            description: body.description || '',
+            course_id: body.courseId,
+            order: body.order,
+        };
 
-    if (error) {
-        return new NextResponse(error.message, { status: 500 });
+        const { data, error } = await supabaseAdmin
+            .from('units')
+            .insert(payload)
+            .select('*')
+            .single();
+
+        if (error) throw error;
+
+        const mapped = {
+            id: data.id,
+            title: data.title,
+            description: data.description,
+            courseId: data.course_id,
+            order: data.order,
+        };
+
+        return NextResponse.json(mapped);
+    } catch (error: any) {
+        return new NextResponse(error.message || "Internal error", { status: 500 });
     }
-
-    const mapped = {
-        id: data.id,
-        title: data.title,
-        description: data.description,
-        courseId: data.course_id,
-        order: data.order,
-    };
-
-    return NextResponse.json(mapped);
 };

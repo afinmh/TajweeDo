@@ -53,9 +53,9 @@ export const Sidebar = ({ className }: Props) => {
                     iconSrc="/leaderboard.svg"
                 />
                 <SidebarItem
-                    label="quests"
+                    label="Doa"
                     href="/quests"
-                    iconSrc="/quests.svg"
+                    iconSrc="/puzzle.png"
                 />
                 <SidebarItem
                     label="shop"
@@ -77,8 +77,8 @@ export const Sidebar = ({ className }: Props) => {
                     <Link href="/leaderboard" prefetch aria-label="Papan" className="flex items-center text-slate-700">
                         <Image src="/leaderboard.svg" alt="Leaderboard" width={28} height={28} />
                     </Link>
-                    <Link href="/quests" prefetch aria-label="Misi" className="flex items-center text-slate-700">
-                        <Image src="/quests.svg" alt="Quests" width={28} height={28} />
+                    <Link href="/quests" prefetch aria-label="Doa" className="flex items-center text-slate-700">
+                        <Image src="/puzzle.png" alt="Doa" width={28} height={28} />
                     </Link>
                     <Link href="/shop" prefetch aria-label="Toko" className="flex items-center text-slate-700">
                         <Image src="/shop.svg" alt="Shop" width={28} height={28} />

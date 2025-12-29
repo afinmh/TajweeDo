@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 
 type Props = {
     label: string;
@@ -21,6 +22,15 @@ export const SidebarItem = ({
     const router = useRouter();
     const active = pathName === href;
 
+    // Prefetch route on mount if it's not the active page
+    useEffect(() => {
+        if (!active) {
+            try {
+                router.prefetch(href);
+            } catch {}
+        }
+    }, [active, href, router]);
+
     return (
         <Button
             variant={active ? "sidebarOutline" : "sidebar"}
@@ -30,8 +40,16 @@ export const SidebarItem = ({
             <Link
                 href={href}
                 prefetch
-                onMouseEnter={() => router.prefetch?.(href)}
-                onFocus={() => router.prefetch?.(href)}
+                onMouseEnter={() => {
+                    try {
+                        router.prefetch(href);
+                    } catch {}
+                }}
+                onTouchStart={() => {
+                    try {
+                        router.prefetch(href);
+                    } catch {}
+                }}
             >
                 <Image 
                     src={iconSrc}

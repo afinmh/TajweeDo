@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server";
-import { getUserProgress } from "@/db/queries";
+import { userProgressService } from "@/lib/services";
 
 export async function GET() {
   try {
-    const up = await getUserProgress();
-    if (!up) return NextResponse.json({}, { status: 200 });
-    return NextResponse.json({ hearts: up.hearts ?? 0, points: up.points ?? 0 });
-  } catch {
-    return NextResponse.json({}, { status: 200 });
+    // ✅ Use service layer for business logic
+    const userProgress = await userProgressService.getCurrentUserProgress();
+    
+    if (!userProgress) {
+      return NextResponse.json({ hearts: 0, points: 0 }, { status: 200 });
+    }
+    
+    return NextResponse.json({ 
+      hearts: userProgress.hearts ?? 0, 
+      points: userProgress.points ?? 0,
+      xp: userProgress.xp ?? 0,
+    });
+  } catch (error) {
+    console.error('Error fetching user progress:', error);
+    return NextResponse.json({ hearts: 0, points: 0 }, { status: 200 });
   }
 }

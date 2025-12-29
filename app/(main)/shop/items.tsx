@@ -72,10 +72,6 @@ export const Items = ({
         })
     };
 
-    const onUpgrade = () => {
-        toast.info("Langganan dinonaktifkan");
-    };
-
     const playMoney = async () => {
         try {
             const a = new Audio('/audio/money.mp3');
@@ -162,6 +158,29 @@ export const Items = ({
                             </div>
                         )
                     }
+                </Button>
+            </div>
+            <div className="flex items-center w-full p-4 gap-x-4 border-t-2">
+                <Image
+                    src="/calender.png"
+                    alt="Daily Login"
+                    height={60}
+                    width={60}
+                />
+                <div className="flex-1">
+                    <p className="text-neutral-700 text-base lg:text-xl font-bold">
+                        Login Harian
+                    </p>
+                    <p className="text-xs text-slate-500">Klaim hadiah harianmu</p>
+                </div>
+                <Button
+                    onClick={() => {
+                        if (typeof window !== "undefined") {
+                            window.dispatchEvent(new Event("open-daily-login"));
+                        }
+                    }}
+                >
+                    Buka
                 </Button>
             </div>
                         {/* Shop items list */}
