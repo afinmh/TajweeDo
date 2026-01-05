@@ -57,9 +57,18 @@ export const POST = async (req: Request) => {
   if (streak?.last_login_date === todayStr && streak?.status) {
     const priorTotal = streak?.total_logins || 0;
     const dayIndex = ((priorTotal - 1) % 30) + 1;
+    
+    // Fetch the reward again for consistency
+    const { data: reward } = await supabaseAdmin
+      .from('daily_login_rewards')
+      .select('day, points, item_id')
+      .eq('day', dayIndex)
+      .maybeSingle();
+    
     return NextResponse.json({
       status: 'already_claimed',
       day: dayIndex,
+      reward,
       currentStreak: streak?.current_streak || 0,
       bestStreak: streak?.best_streak || 0,
       totalLogins: priorTotal,
@@ -130,6 +139,13 @@ export const POST = async (req: Request) => {
 
 // GET: returns rewards and user's daily login state; also resets state for a new day (status=false, view=false)
 export const GET = async (req: Request) => {
+  // Set cache control headers
+  const headers = {
+    'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  };
+  
   // Always return rewards for the client grid
   let rewards: any[] = [];
   try {
@@ -144,7 +160,7 @@ export const GET = async (req: Request) => {
 
   // If user not logged in, only return rewards
   const userId = getUserIdFromCookie(req);
-  if (!userId) return NextResponse.json({ rewards });
+  if (!userId) return NextResponse.json({ rewards }, { headers });
 
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10);
@@ -230,7 +246,7 @@ export const GET = async (req: Request) => {
       day: dayIndex,
       reward,
     }
-  });
+  }, { headers });
 };
 
 // PATCH: update view flag (e.g., hide modal today)

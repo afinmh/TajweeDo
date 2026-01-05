@@ -20,7 +20,16 @@ export default function DailyLogin() {
   // Helper: refresh rewards and state, and auto-open if server says so
   const refreshState = async (autoOpen = true) => {
     try {
-      const rres = await fetch('/api/daily-login', { method: 'GET', cache: 'no-store' });
+      // Add timestamp to prevent caching
+      const timestamp = new Date().getTime();
+      const rres = await fetch(`/api/daily-login?t=${timestamp}`, { 
+        method: 'GET', 
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
       if (!rres.ok) return;
       const data = await rres.json();
       if (Array.isArray(data.rewards)) {
@@ -177,14 +186,19 @@ export default function DailyLogin() {
                 }
                 try {
                   setLoading(true);
-                  const res = await fetch('/api/daily-login', { method: 'POST' });
+                  const res = await fetch('/api/daily-login', { 
+                    method: 'POST',
+                    cache: 'no-store',
+                    headers: {
+                      'Cache-Control': 'no-cache, no-store, must-revalidate'
+                    }
+                  });
                   if (res.ok) {
                     const j = await res.json();
                     if (j?.status === 'claimed' || j?.status === 'already_claimed') {
-                      setDay(j.day || null);
-                      setReward(j.reward || null);
-                      setTotal(j.totalLogins || j.total_logins || null);
-                      setClaimedToday(true);
+                      // Immediately refresh state from server to ensure consistency
+                      await refreshState(false);
+                      
                       // Play sound only when a new claim succeeds (checkmark applied)
                       if (j?.status === 'claimed') {
                         const itemId = j?.reward?.item_id;

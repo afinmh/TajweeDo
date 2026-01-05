@@ -9,6 +9,10 @@ import { Items } from "./items";
 import { Quests } from "@/components/quests";
 import DailyLogin from "@/components/daily-login";
 
+// Disable caching for this page to always get fresh data
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const ShopPage = async () => {
     // ✅ Use service for cleaner data access
     const userProgress = await userProgressService.getCurrentUserProgress();
