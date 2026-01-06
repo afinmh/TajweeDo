@@ -5,6 +5,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { performCompleteLogout } from "@/lib/utils/logout";
 
 type Avatar = { id: number; name: string; image_src: string };
 
@@ -136,12 +137,7 @@ export default function AccountForm() {
           variant="danger"
           className="bg-rose-500 hover:bg-rose-600"
           onClick={async () => {
-            try {
-              await fetch('/api/auth/logout', { method: 'POST' });
-              window.location.href = '/';
-            } catch {
-              // ignore
-            }
+            await performCompleteLogout();
           }}
         >
           Keluar

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { performCompleteLogout } from "@/lib/utils/logout";
 
 export default function HeaderUser() {
     const [open, setOpen] = useState(false);
@@ -66,14 +67,7 @@ export default function HeaderUser() {
                         className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                         onClick={async () => {
                             setOpen(false);
-                            try {
-                                await fetch('/api/auth/logout', { method: 'POST', cache: 'no-store' });
-                            } catch {}
-                            // Tell SW-controlled clients to clear auth cache and reload
-                            try {
-                                navigator.serviceWorker?.controller?.postMessage({ type: 'LOGOUT' });
-                            } catch {}
-                            window.location.replace('/');
+                            await performCompleteLogout();
                         }}
                     >
                         Keluar

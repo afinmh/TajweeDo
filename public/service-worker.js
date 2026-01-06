@@ -45,13 +45,30 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Listen for logout to clear auth/me cache
+// Listen for logout to clear all caches
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'LOGOUT') {
+    // Clear specific auth cache (backwards compatibility)
     caches.open(CACHE_NAME).then(cache => {
       cache.keys().then(keys => {
         keys.forEach(req => {
           if (req.url.endsWith('/api/auth/me')) cache.delete(req);
+        });
+      });
+    });
+  }
+  
+  // Complete logout: delete ALL caches
+  if (event.data && event.data.type === 'LOGOUT_CLEAR_ALL') {
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => caches.delete(cacheName))
+      );
+    }).then(() => {
+      // Notify all clients that cache is cleared
+      self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({ type: 'CACHE_CLEARED' });
         });
       });
     });
