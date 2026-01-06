@@ -76,33 +76,39 @@ export const LessonButton = ({
             aria-disabled={locked}
             style={{ pointerEvents: locked ? "none" : "auto" }}
             onClick={async (e) => {
-                if (locked) return;
+                if (locked || pending) return;
+                
+                // Show loading immediately for better UX
+                setPending(true);
+                window.dispatchEvent(new Event('route-loading-start'));
+                
                 const isCompletedLocal = !current && !locked;
                 // If completed allow immediate navigation (practice mode)
                 if (isCompletedLocal) {
-                    window.dispatchEvent(new Event('route-loading-start'));
-                    setPending(true);
                     return;
                 }
+                
+                // For current lesson, check hearts in background without blocking
                 try {
-                    setPending(true);
-                    const res = await fetch('/api/user-progress', { cache: 'no-store' });
+                    const res = await fetch('/api/user-progress', { 
+                        cache: 'no-store',
+                        signal: AbortSignal.timeout(2000) // 2s timeout
+                    });
                     const data = await res.json().catch(() => ({}));
                     const hearts = Number(data?.hearts ?? 0);
                     if (Number.isFinite(hearts) && hearts <= 0) {
                         e.preventDefault();
                         setPending(false);
                         openBroken();
+                        // Cancel navigation
+                        window.history.pushState(null, '', window.location.pathname);
                         return;
                     }
-                    // Hearts ok, dispatch global route loader
-                    window.dispatchEvent(new Event('route-loading-start'));
-                } catch {
-                    // If check fails still navigate but show loader
-                    window.dispatchEvent(new Event('route-loading-start'));
-                } finally {
-                    // Let navigation proceed; spinner remains until route change
+                } catch (err) {
+                    // On timeout or error, allow navigation anyway
+                    console.warn('Hearts check timed out, allowing navigation');
                 }
+                // Navigation proceeds via Link href
             }}
         >
             <div
