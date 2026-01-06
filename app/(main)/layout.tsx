@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/sidebar";
 import { InstallAppModal } from "@/components/modals/install-app-modal";
 import { getUserProgress } from "@/db/queries";
 import { ClientLayout } from "@/components/client-layout";
+import DailyLogin from "@/components/daily-login";
 
 type Props = {
     children: React.ReactNode;
@@ -25,6 +26,7 @@ const MainLayout = async ({
                 </div>
             </main>
             <InstallAppModal />
+            <DailyLogin />
         </ClientLayout>
     );
 }

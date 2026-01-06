@@ -10,9 +10,8 @@ const CoursesPage = async () => {
         userProgressService.getCurrentUserProgress(),
     ]);
 
-    if (!userProgress) {
-        redirect('/');
-    }
+    // ✅ Allow users without progress to access courses page to select their first course
+    // User progress will be created when they select a course
 
     return (
         <div className="h-full max-w-[912px] px-4 sm:px-6 mx-auto pt-[10px] lg:pt-0 lg:pb-0 no-scrollbar">

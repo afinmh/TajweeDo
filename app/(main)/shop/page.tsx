@@ -7,7 +7,6 @@ import { redirect } from "next/navigation";
 import NeedCourse from "@/components/need-course";
 import { Items } from "./items";
 import { Quests } from "@/components/quests";
-import DailyLogin from "@/components/daily-login";
 
 // Disable caching for this page to always get fresh data
 export const dynamic = 'force-dynamic';
@@ -17,10 +16,7 @@ const ShopPage = async () => {
     // ✅ Use service for cleaner data access
     const userProgress = await userProgressService.getCurrentUserProgress();
 
-    if(!userProgress){
-        redirect('/');
-    }
-    if(!userProgress.activeCourse){
+    if(!userProgress || !userProgress.activeCourse){
         return <NeedCourse />;
     }
 
@@ -56,7 +52,6 @@ const ShopPage = async () => {
                         points={userProgress.points}
                         hasActiveSubscription={false}
                     />
-                    <DailyLogin />
                 </div>
             </FeedWrapper>
         </div>

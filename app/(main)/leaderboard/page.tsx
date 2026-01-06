@@ -16,10 +16,7 @@ const LeaderboardPage = async () => {
         userProgressService.getLeaderboard(10),
     ]);
 
-    if (!userProgress) {
-        redirect('/');
-    }
-    if (!userProgress.activeCourse) {
+    if (!userProgress || !userProgress.activeCourse) {
         return <NeedCourse />;
     }
 

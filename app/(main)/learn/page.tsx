@@ -29,7 +29,7 @@ const LearnPage = async () => {
     const userProgress = await userProgressService.getCurrentUserProgress();
 
     if (!userProgress || !userProgress.activeCourse) {
-        return <NeedCourse />;
+        redirect('/courses');
     }
 
     // ✅ Parallel data fetching with services for optimal performance
