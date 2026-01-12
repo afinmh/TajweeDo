@@ -181,6 +181,7 @@ export class UserProgressRepository {
 
   /**
    * Get top users by XP (leaderboard)
+   * If XP is the same, sort by points (descending)
    */
   async getTopUsers(limit: number = 10): Promise<UserProgress[]> {
     try {
@@ -188,6 +189,7 @@ export class UserProgressRepository {
         .from('user_progress')
         .select('user_id, user_name, user_image_src, active_course_id, hearts, points, xp')
         .order('xp', { ascending: false })
+        .order('points', { ascending: false })
         .limit(limit);
 
       if (error || !data) return [];
