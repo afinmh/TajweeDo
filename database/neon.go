@@ -28,8 +28,14 @@ func InitPool() {
 			return
 		}
 
-		var err error
-		Pool, err = pgxpool.New(context.Background(), dbURL)
+		config, err := pgxpool.ParseConfig(dbURL)
+		if err != nil {
+			log.Fatalf("Unable to parse database config: %v\n", err)
+		}
+		config.MaxConns = 20
+		config.MinConns = 3
+
+		Pool, err = pgxpool.NewWithConfig(context.Background(), config)
 		if err != nil {
 			log.Fatalf("Unable to connect to database: %v\n", err)
 		}

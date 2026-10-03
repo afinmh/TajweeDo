@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"context"
-	"encoding/json"
 	"net/http"
 	"os"
 	"strings"
@@ -57,49 +55,34 @@ func Items(w http.ResponseWriter, r *http.Request) {
 
 	database.InitPool()
 
-	// Ambil semua item dari store_items
-	// Left join dengan user_inventory untuk tahu apakah user sudah beli
+	// Ambil semua item dari store_items secara teragregasi
 	query := `
-		SELECT si.id, si.name, si.image_src, si.price_points, si.item_type,
-		       CASE WHEN ui.item_id IS NOT NULL THEN true ELSE false END as purchased
-		FROM store_items si
-		LEFT JOIN user_purchases ui ON si.id = ui.item_id AND ui.user_id = $1
-		WHERE si.active = true
+	SELECT COALESCE(
+		json_agg(
+			json_build_object(
+				'id', si.id,
+				'name', si.name,
+				'imageSrc', si.image_src,
+				'pricePoints', si.price_points,
+				'itemType', si.item_type,
+				'purchased', CASE WHEN ui.item_id IS NOT NULL THEN true ELSE false END
+			) ORDER BY si.id ASC
+		),
+		'[]'::json
+	)
+	FROM store_items si
+	LEFT JOIN user_purchases ui ON si.id = ui.item_id AND ui.user_id = $1
+	WHERE si.active = true;
 	`
 
-	rows, err := database.Pool.Query(context.Background(), query, userId)
+	var result []byte
+	err = database.Pool.QueryRow(r.Context(), query, userId).Scan(&result)
 	if err != nil {
-		http.Error(w, "Database error", http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("[]"))
 		return
-	}
-	defer rows.Close()
-
-	var items []map[string]interface{}
-	for rows.Next() {
-		var id int
-		var name, imageSrc, itemType string
-		var pricePoints int
-		
-		// The `database/sql` driver handles standard Go types.
-		// `pgx` is likely used, so `bool` is fine.
-		var isPurchased bool
-
-		if err := rows.Scan(&id, &name, &imageSrc, &pricePoints, &itemType, &isPurchased); err != nil {
-			// print error to console to debug
-			println("Scan error:", err.Error())
-			continue
-		}
-
-		items = append(items, map[string]interface{}{
-			"id":          id,
-			"name":        name,
-			"imageSrc":    imageSrc,
-			"pricePoints": pricePoints,
-			"itemType":    itemType,
-			"purchased":   isPurchased,
-		})
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(items)
+	w.Write(result)
 }

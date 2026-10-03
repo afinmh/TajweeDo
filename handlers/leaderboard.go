@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"context"
-	"encoding/json"
 	"net/http"
 
 	"tajweedo-backend/database"
@@ -18,27 +16,35 @@ func Leaderboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	database.InitPool()
-	rows, err := database.Pool.Query(context.Background(), "SELECT user_id, user_name, user_image_src, points, xp FROM user_progress ORDER BY xp DESC, points DESC")
-	if err != nil {
-		http.Error(w, "DB Error", 500)
-		return
-	}
-	defer rows.Close()
+	query := `
+	SELECT COALESCE(
+		json_agg(
+			json_build_object(
+				'userId', user_id,
+				'userName', COALESCE(user_name, 'Learner'),
+				'userImageSrc', COALESCE(user_image_src, '/mascot.svg'),
+				'points', points,
+				'xp', xp
+			)
+		),
+		'[]'::json
+	)
+	FROM (
+		SELECT user_id, user_name, user_image_src, points, xp 
+		FROM user_progress 
+		ORDER BY xp DESC, points DESC 
+		LIMIT 100
+	) sub;
+	`
 
-	users := []map[string]interface{}{}
-	for rows.Next() {
-		var id, name, img string
-		var points, xp int
-		rows.Scan(&id, &name, &img, &points, &xp)
-		users = append(users, map[string]interface{}{
-			"userId":       id,
-			"userName":     name,
-			"userImageSrc": img,
-			"points":       points,
-			"xp":           xp,
-		})
+	var result []byte
+	err := database.Pool.QueryRow(r.Context(), query).Scan(&result)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("[]"))
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+	w.Write(result)
 }

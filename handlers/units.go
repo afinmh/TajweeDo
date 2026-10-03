@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"os"
 	"strings"
@@ -57,132 +56,80 @@ func Units(w http.ResponseWriter, r *http.Request) {
 	database.InitPool()
 	ctx := context.Background()
 
-	// Ambil active_course_id
-	var activeCourseId int
-	err = database.Pool.QueryRow(ctx, "SELECT active_course_id FROM user_progress WHERE user_id = $1", userId).Scan(&activeCourseId)
-	if err != nil || activeCourseId == 0 {
-		json.NewEncoder(w).Encode([]interface{}{})
-		return
-	}
+	// Single unified query with CTE and json_agg for maximum performance
+	query := `
+	WITH user_course AS (
+		SELECT active_course_id 
+		FROM user_progress 
+		WHERE user_id = $1
+	),
+	completed_lessons AS (
+		SELECT lesson_id 
+		FROM lesson_progress 
+		WHERE user_id = $1 AND completed = true
+	),
+	completed_challenges AS (
+		SELECT challenge_id 
+		FROM challenge_progress 
+		WHERE user_id = $1 AND completed = true
+	),
+	lesson_status AS (
+		SELECT 
+			l.id,
+			l.title,
+			l."order",
+			l.unit_id,
+			CASE 
+				WHEN cl.lesson_id IS NOT NULL THEN true
+				WHEN COUNT(lc.challenge_id) > 0 AND COUNT(lc.challenge_id) = COUNT(cc.challenge_id) THEN true
+				ELSE false
+			END AS completed
+		FROM lessons l
+		JOIN units u ON u.id = l.unit_id
+		JOIN user_course uc ON uc.active_course_id = u.course_id
+		LEFT JOIN completed_lessons cl ON cl.lesson_id = l.id
+		LEFT JOIN lesson_challenges lc ON lc.lesson_id = l.id
+		LEFT JOIN completed_challenges cc ON cc.challenge_id = lc.challenge_id
+		GROUP BY l.id, l.title, l."order", l.unit_id, cl.lesson_id
+	)
+	SELECT COALESCE(
+		json_agg(
+			json_build_object(
+				'id', u.id,
+				'title', u.title,
+				'description', u.description,
+				'order', u."order",
+				'lessons', COALESCE(
+					(
+						SELECT json_agg(
+							json_build_object(
+								'id', ls.id,
+								'title', ls.title,
+								'order', ls."order",
+								'completed', ls.completed
+							) ORDER BY ls."order" ASC
+						)
+						FROM lesson_status ls
+						WHERE ls.unit_id = u.id
+					),
+					'[]'::json
+				)
+			) ORDER BY u."order" ASC
+		),
+		'[]'::json
+	)
+	FROM units u
+	JOIN user_course uc ON uc.active_course_id = u.course_id;
+	`
 
-	// Ambil units
-	rows, err := database.Pool.Query(ctx, "SELECT id, title, description, \"order\" FROM units WHERE course_id = $1 ORDER BY \"order\" ASC", activeCourseId)
+	var unitsJSON []byte
+	err = database.Pool.QueryRow(ctx, query, userId).Scan(&unitsJSON)
 	if err != nil {
-		http.Error(w, "DB Error", 500)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("[]"))
 		return
-	}
-	defer rows.Close()
-
-	type Lesson struct {
-		ID        int    `json:"id"`
-		Title     string `json:"title"`
-		Order     int    `json:"order"`
-		Completed bool   `json:"completed"`
-	}
-
-	type Unit struct {
-		ID          int      `json:"id"`
-		Title       string   `json:"title"`
-		Description string   `json:"description"`
-		Order       int      `json:"order"`
-		Lessons     []Lesson `json:"lessons"`
-	}
-
-	units := []Unit{}
-	var unitIDs []int
-	for rows.Next() {
-		var u Unit
-		rows.Scan(&u.ID, &u.Title, &u.Description, &u.Order)
-		u.Lessons = []Lesson{}
-		units = append(units, u)
-		unitIDs = append(unitIDs, u.ID)
-	}
-
-	if len(units) > 0 {
-		// Ambil lessons
-		lrows, _ := database.Pool.Query(ctx, "SELECT id, title, \"order\", unit_id FROM lessons WHERE unit_id = ANY($1) ORDER BY \"order\" ASC", unitIDs)
-		defer lrows.Close()
-		
-		lessonsByUnit := make(map[int][]Lesson)
-		for lrows.Next() {
-			var l Lesson
-			var uid int
-			lrows.Scan(&l.ID, &l.Title, &l.Order, &uid)
-			lessonsByUnit[uid] = append(lessonsByUnit[uid], l)
-		}
-
-		// Ambil lesson_progress
-		lprows, _ := database.Pool.Query(ctx, "SELECT lesson_id, completed FROM lesson_progress WHERE user_id = $1", userId)
-		completedLessons := make(map[int]bool)
-		if lprows != nil {
-			for lprows.Next() {
-				var lid int
-				var comp bool
-				lprows.Scan(&lid, &comp)
-				if comp {
-					completedLessons[lid] = true
-				}
-			}
-			lprows.Close()
-		}
-
-		// Ambil challenge_progress
-		crows, _ := database.Pool.Query(ctx, "SELECT challenge_id FROM challenge_progress WHERE user_id = $1 AND completed = true", userId)
-		completedChallenges := make(map[int]bool)
-		if crows != nil {
-			for crows.Next() {
-				var cid int
-				crows.Scan(&cid)
-				completedChallenges[cid] = true
-			}
-			crows.Close()
-		}
-
-		var lessonIDs []int
-		for _, ls := range lessonsByUnit {
-			for _, l := range ls {
-				lessonIDs = append(lessonIDs, l.ID)
-			}
-		}
-
-		lessonChallenges := make(map[int][]int)
-		if len(lessonIDs) > 0 {
-			// Use pivot table for structured 7-per-lesson distribution
-			chrows, _ := database.Pool.Query(ctx, "SELECT lesson_id, challenge_id FROM lesson_challenges WHERE lesson_id = ANY($1)", lessonIDs)
-			if chrows != nil {
-				for chrows.Next() {
-					var lid, cid int
-					chrows.Scan(&lid, &cid)
-					lessonChallenges[lid] = append(lessonChallenges[lid], cid)
-				}
-				chrows.Close()
-			}
-		}
-
-		for uid, lessons := range lessonsByUnit {
-			for i, l := range lessons {
-				done := completedLessons[l.ID]
-				if !done {
-					cids := lessonChallenges[l.ID]
-					if len(cids) > 0 {
-						done = true
-						for _, cid := range cids {
-							if !completedChallenges[cid] {
-								done = false
-								break
-							}
-						}
-					}
-				}
-				lessonsByUnit[uid][i].Completed = done
-			}
-		}
-		
-		for i := range units {
-			units[i].Lessons = lessonsByUnit[units[i].ID]
-		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(units)
+	w.Write(unitsJSON)
 }

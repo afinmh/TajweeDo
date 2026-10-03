@@ -8,33 +8,70 @@ type Props = {
     userProgress: any;
 };
 
+type RekapCache = {
+    rank: number | null;
+    activeLesson: { unitTitle: string; lessonTitle: string } | null;
+    userId: string;
+    updatedAt: number;
+};
+
+const CACHE_KEY = "tajweedo_rekap_cache";
+
+function getCachedRekap(): RekapCache | null {
+    try {
+        const item = sessionStorage.getItem(CACHE_KEY);
+        return item ? JSON.parse(item) : null;
+    } catch {
+        return null;
+    }
+}
+
+function setCachedRekap(data: RekapCache) {
+    try {
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    } catch {}
+}
+
 export const RightSidebarContent = ({ userProgress }: Props) => {
-    const [rank, setRank] = useState<number | null>(null);
-    const [activeLesson, setActiveLesson] = useState<{unitTitle: string, lessonTitle: string} | null>(null);
-    const [loading, setLoading] = useState(true);
+    const cached = getCachedRekap();
+    const hasCache = !!cached && cached.userId === userProgress?.userId;
+
+    const [rank, setRank] = useState<number | null>(() => (hasCache ? cached.rank : null));
+    const [activeLesson, setActiveLesson] = useState<{unitTitle: string, lessonTitle: string} | null>(
+        () => (hasCache ? cached.activeLesson : null)
+    );
+    const [loading, setLoading] = useState<boolean>(() => !hasCache);
 
     useEffect(() => {
-        if (!userProgress) return;
+        if (!userProgress?.userId) return;
         
-        async function fetchStats() {
+        let isMounted = true;
+
+        async function fetchStats(showLoading = false) {
+            if (showLoading) setLoading(true);
             try {
-                // Fetch leaderboard for rank
-                const lbRes = await fetch('/api/leaderboard');
+                // Fetch in parallel for faster response
+                const [lbRes, unRes] = await Promise.all([
+                    fetch('/api/leaderboard'),
+                    fetch('/api/units')
+                ]);
+
+                let newRank: number | null = null;
+                let newActiveLesson: { unitTitle: string; lessonTitle: string } | null = null;
+
                 if (lbRes.ok) {
                     const lbData = await lbRes.json();
                     const index = (lbData || []).findIndex((u: any) => u.userId === userProgress.userId);
-                    if (index !== -1) setRank(index + 1);
+                    if (index !== -1) newRank = index + 1;
                 }
 
-                // Fetch units for current lesson
-                const unRes = await fetch('/api/units');
                 if (unRes.ok) {
                     const unitsData = await unRes.json();
                     let found = false;
                     for (const u of unitsData || []) {
                         for (const l of u.lessons || []) {
                             if (!l.completed && !found) {
-                                setActiveLesson({ unitTitle: u.title, lessonTitle: l.title });
+                                newActiveLesson = { unitTitle: u.title, lessonTitle: l.title };
                                 found = true;
                                 break;
                             }
@@ -42,15 +79,39 @@ export const RightSidebarContent = ({ userProgress }: Props) => {
                         if (found) break;
                     }
                 }
+
+                if (isMounted) {
+                    setRank(newRank);
+                    setActiveLesson(newActiveLesson);
+                    setCachedRekap({
+                        rank: newRank,
+                        activeLesson: newActiveLesson,
+                        userId: userProgress.userId,
+                        updatedAt: Date.now()
+                    });
+                }
             } catch (e) {
                 console.error(e);
             } finally {
-                setLoading(false);
+                if (isMounted) {
+                    setLoading(false);
+                }
             }
         }
         
-        fetchStats();
-    }, [userProgress]);
+        // If cache exists, revalidate silently in background without showing spinner
+        fetchStats(!hasCache);
+
+        const handleRefresh = () => fetchStats(false);
+        window.addEventListener('refresh-user-progress', handleRefresh);
+        window.addEventListener('refresh-rekap', handleRefresh);
+
+        return () => {
+            isMounted = false;
+            window.removeEventListener('refresh-user-progress', handleRefresh);
+            window.removeEventListener('refresh-rekap', handleRefresh);
+        };
+    }, [userProgress?.userId, userProgress?.xp]);
 
     if (!userProgress) return null;
 
