@@ -3,24 +3,38 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-
+import { getSessionCache, setSessionCache } from "@/lib/cache";
 
 type Reward = { points?: number; item_id?: number } | null;
 
+type DailyLoginCache = {
+  rewardsMap: Record<number, { points?: number; item_id?: number }>;
+  day: number | null;
+  reward: Reward;
+  total: number | null;
+  claimedToday: boolean;
+  hideToday: boolean;
+};
+
+const CACHE_KEY = "tajweedo_daily_login_cache";
+
 export default function DailyLogin() {
+  const cachedDL = getSessionCache<DailyLoginCache>(CACHE_KEY);
+
   const [open, setOpen] = useState(false);
-  const [day, setDay] = useState<number | null>(null);
-  const [reward, setReward] = useState<Reward>(null);
-  const [total, setTotal] = useState<number | null>(null);
-  const [rewardsMap, setRewardsMap] = useState<Record<number, { points?: number; item_id?: number }>>({});
-  const [claimedToday, setClaimedToday] = useState<boolean>(false);
-  const [hideToday, setHideToday] = useState<boolean>(false);
+  const [day, setDay] = useState<number | null>(() => cachedDL?.day ?? null);
+  const [reward, setReward] = useState<Reward>(() => cachedDL?.reward ?? null);
+  const [total, setTotal] = useState<number | null>(() => cachedDL?.total ?? null);
+  const [rewardsMap, setRewardsMap] = useState<Record<number, { points?: number; item_id?: number }>>(
+    () => cachedDL?.rewardsMap ?? {}
+  );
+  const [claimedToday, setClaimedToday] = useState<boolean>(() => cachedDL?.claimedToday ?? false);
+  const [hideToday, setHideToday] = useState<boolean>(() => cachedDL?.hideToday ?? false);
   const [loading, setLoading] = useState<boolean>(false);
 
   // Helper: refresh rewards and state, and auto-open if server says so
   const refreshState = async (autoOpen = true) => {
     try {
-      // Add timestamp to prevent caching
       const timestamp = new Date().getTime();
       const rres = await fetch(`/api/daily-login?t=${timestamp}`, { 
         method: 'GET', 
@@ -32,18 +46,34 @@ export default function DailyLogin() {
       });
       if (!rres.ok) return;
       const data = await rres.json();
+      let map = rewardsMap;
       if (Array.isArray(data.rewards)) {
-        const map: Record<number, any> = {};
+        map = {};
         data.rewards.forEach((it: any) => { map[it.day] = { points: it.points, item_id: it.item_id }; });
         setRewardsMap(map);
       }
       if (data.state) {
-        setDay(data.state.day || null);
-        setReward(data.state.reward || null);
-        setTotal(data.state.totalLogins || null);
-        setClaimedToday(!!data.state.status);
-        setHideToday(!!data.state.view);
+        const newDay = data.state.day || null;
+        const newReward = data.state.reward || null;
+        const newTotal = data.state.totalLogins || null;
+        const newClaimed = !!data.state.status;
+        const newHide = !!data.state.view;
+
+        setDay(newDay);
+        setReward(newReward);
+        setTotal(newTotal);
+        setClaimedToday(newClaimed);
+        setHideToday(newHide);
         if (autoOpen && data.state.show) setOpen(true);
+
+        setSessionCache(CACHE_KEY, {
+          rewardsMap: map,
+          day: newDay,
+          reward: newReward,
+          total: newTotal,
+          claimedToday: newClaimed,
+          hideToday: newHide,
+        });
       }
     } catch {
       // ignore
@@ -59,11 +89,13 @@ export default function DailyLogin() {
     return () => { mounted = false; };
   }, []);
 
-  // Allow opening the modal from anywhere via a custom event
+  // Allow opening the modal from anywhere via a custom event INSTANTLY
   useEffect(() => {
-    const handler = async () => {
-      await refreshState(false);
+    const handler = () => {
+      // Open immediately (0ms delay)
       setOpen(true);
+      // Background revalidation
+      void refreshState(false);
     };
     window.addEventListener('open-daily-login', handler as EventListener);
     return () => window.removeEventListener('open-daily-login', handler as EventListener);

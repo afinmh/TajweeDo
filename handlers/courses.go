@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"context"
-	"encoding/json"
 	"net/http"
 	"tajweedo-backend/database"
 )
@@ -18,25 +16,28 @@ func Courses(w http.ResponseWriter, r *http.Request) {
 	}
 
 	database.InitPool()
-	rows, err := database.Pool.Query(context.Background(), "SELECT id, title, image_src FROM courses ORDER BY id ASC")
-	if err != nil {
-		http.Error(w, "DB Error", http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
+	query := `
+	SELECT COALESCE(
+		json_agg(
+			json_build_object(
+				'id', id,
+				'title', title,
+				'imageSrc', image_src
+			) ORDER BY id ASC
+		),
+		'[]'::json
+	)
+	FROM courses;
+	`
 
-	courses := []map[string]interface{}{}
-	for rows.Next() {
-		var id int
-		var title, image string
-		rows.Scan(&id, &title, &image)
-		courses = append(courses, map[string]interface{}{
-			"id":       id,
-			"title":    title,
-			"imageSrc": image,
-		})
+	var result []byte
+	err := database.Pool.QueryRow(r.Context(), query).Scan(&result)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("[]"))
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(courses)
+	w.Write(result)
 }

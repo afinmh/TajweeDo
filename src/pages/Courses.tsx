@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
+import { getSessionCache, setSessionCache } from "@/lib/cache";
 
 export default function Courses() {
-  const [courses, setCourses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedCourses = getSessionCache<any[]>("tajweedo_courses_cache");
+  const [courses, setCourses] = useState<any[]>(() => cachedCourses || []);
+  const [loading, setLoading] = useState(() => !cachedCourses);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -13,6 +15,7 @@ export default function Courses() {
         if (res.ok) {
           const data = await res.json();
           setCourses(data || []);
+          setSessionCache("tajweedo_courses_cache", data || []);
         }
       } catch (err) {
         console.error(err);
