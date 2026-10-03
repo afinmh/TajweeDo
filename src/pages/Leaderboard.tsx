@@ -7,10 +7,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getSessionCache, setSessionCache } from "@/lib/cache";
 
 export default function Leaderboard() {
   const { userProgress } = useOutletContext<{ userProgress: any }>();
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const cachedLb = getSessionCache<any[]>("tajweedo_leaderboard_cache");
+  const [leaderboard, setLeaderboard] = useState<any[]>(() => cachedLb || []);
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(10);
 
@@ -21,6 +23,7 @@ export default function Leaderboard() {
         if (res.ok) {
           const data = await res.json();
           setLeaderboard(data || []);
+          setSessionCache("tajweedo_leaderboard_cache", data || []);
         }
       } catch (e) {
         console.error(e);

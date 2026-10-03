@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
+import { getSessionCache, setSessionCache } from "@/lib/cache";
+
 type Props = {
     userProgress: any;
 };
@@ -17,23 +19,8 @@ type RekapCache = {
 
 const CACHE_KEY = "tajweedo_rekap_cache";
 
-function getCachedRekap(): RekapCache | null {
-    try {
-        const item = sessionStorage.getItem(CACHE_KEY);
-        return item ? JSON.parse(item) : null;
-    } catch {
-        return null;
-    }
-}
-
-function setCachedRekap(data: RekapCache) {
-    try {
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
-    } catch {}
-}
-
 export const RightSidebarContent = ({ userProgress }: Props) => {
-    const cached = getCachedRekap();
+    const cached = getSessionCache<RekapCache>(CACHE_KEY);
     const hasCache = !!cached && cached.userId === userProgress?.userId;
 
     const [rank, setRank] = useState<number | null>(() => (hasCache ? cached.rank : null));
@@ -83,7 +70,7 @@ export const RightSidebarContent = ({ userProgress }: Props) => {
                 if (isMounted) {
                     setRank(newRank);
                     setActiveLesson(newActiveLesson);
-                    setCachedRekap({
+                    setSessionCache(CACHE_KEY, {
                         rank: newRank,
                         activeLesson: newActiveLesson,
                         userId: userProgress.userId,

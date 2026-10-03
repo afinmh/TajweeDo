@@ -5,13 +5,21 @@ import { RightSidebarContent } from "@/components/right-sidebar-content";
 import { useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { getSessionCache, setSessionCache } from "@/lib/cache";
 
 export default function Shop() {
   const { userProgress } = useOutletContext<{ userProgress: any }>();
-  const [shopItems, setShopItems] = useState<any[]>([]);
-  const [giftItems, setGiftItems] = useState<any[]>([]);
-  const [achievementItems, setAchievementItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedShop = getSessionCache<any[]>("tajweedo_shop_cache");
+  const [shopItems, setShopItems] = useState<any[]>(() => 
+    (cachedShop || []).filter((i: any) => i.itemType === 'shop' || i.itemType === 'profile')
+  );
+  const [giftItems, setGiftItems] = useState<any[]>(() => 
+    (cachedShop || []).filter((i: any) => i.itemType === 'gift')
+  );
+  const [achievementItems, setAchievementItems] = useState<any[]>(() => 
+    (cachedShop || []).filter((i: any) => i.itemType === 'achievement')
+  );
+  const [loading, setLoading] = useState(() => !cachedShop);
   const [pending, setPending] = useState(false);
 
   const fetchItems = async () => {
@@ -23,6 +31,7 @@ export default function Shop() {
         setShopItems(all.filter((i: any) => i.itemType === 'shop' || i.itemType === 'profile'));
         setGiftItems(all.filter((i: any) => i.itemType === 'gift'));
         setAchievementItems(all.filter((i: any) => i.itemType === 'achievement'));
+        setSessionCache("tajweedo_shop_cache", all);
       }
     } catch (e) {
       console.error(e);

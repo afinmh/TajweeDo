@@ -6,6 +6,7 @@ import { useOutletContext, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { getSessionCache, setSessionCache, clearSessionCache } from "@/lib/cache";
 
 type Avatar = { id: number; name: string; image_src: string };
 
@@ -13,13 +14,14 @@ export default function Account() {
   const { userProgress } = useOutletContext<{ userProgress: any }>();
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
+  const cachedAcc = getSessionCache<any>("tajweedo_account_cache");
+  const [loading, setLoading] = useState(() => !cachedAcc);
   const [saving, setSaving] = useState(false);
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState(() => cachedAcc?.user?.username || "");
+  const [email, setEmail] = useState(() => cachedAcc?.user?.email || "");
   const [password, setPassword] = useState("");
-  const [currentImage, setCurrentImage] = useState<string | undefined>(undefined);
-  const [owned, setOwned] = useState<Avatar[]>([]);
+  const [currentImage, setCurrentImage] = useState<string | undefined>(() => cachedAcc?.user?.profile_image_src || undefined);
+  const [owned, setOwned] = useState<Avatar[]>(() => cachedAcc?.ownedAvatars || []);
 
   useEffect(() => {
     (async () => {
@@ -37,6 +39,7 @@ export default function Account() {
         setEmail(data?.user?.email || "");
         setCurrentImage(data?.user?.profile_image_src || undefined);
         setOwned(data?.ownedAvatars || []);
+        setSessionCache("tajweedo_account_cache", data);
       } catch (e) {
         toast.error("Gagal memuat data akun");
       } finally {
@@ -78,6 +81,7 @@ export default function Account() {
   const onLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
+      clearSessionCache();
       window.location.href = '/';
     } catch {
       toast.error('Gagal logout');

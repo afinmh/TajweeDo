@@ -6,6 +6,7 @@ import { Unit } from "@/components/learn/unit";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getSessionCache, setSessionCache } from "@/lib/cache";
 
 function Header({ title }: { title: string }) {
   const navigate = useNavigate();
@@ -23,8 +24,12 @@ function Header({ title }: { title: string }) {
 export default function Learn() {
   const navigate = useNavigate();
   const { userProgress } = useOutletContext<{ userProgress: any }>();
-  const [units, setUnits] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  const cacheKey = `tajweedo_units_${userProgress?.activeCourseId || 0}`;
+  const cachedUnits = getSessionCache<any[]>(cacheKey);
+
+  const [units, setUnits] = useState<any[]>(() => cachedUnits || []);
+  const [loading, setLoading] = useState(() => !cachedUnits);
   const activeLessonRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,6 +44,7 @@ export default function Learn() {
         if (res.ok) {
           const data = await res.json();
           setUnits(data || []);
+          setSessionCache(`tajweedo_units_${userProgress.activeCourseId}`, data || []);
         }
       } catch (err) {
         console.error(err);
@@ -46,8 +52,12 @@ export default function Learn() {
         setLoading(false);
       }
     }
+
     loadData();
-  }, [userProgress, navigate]);
+
+    window.addEventListener('refresh-user-progress', loadData);
+    return () => window.removeEventListener('refresh-user-progress', loadData);
+  }, [userProgress?.activeCourseId, navigate]);
 
   // Auto-scroll to active lesson after data loads
   useEffect(() => {
